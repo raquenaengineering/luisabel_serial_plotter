@@ -2,6 +2,12 @@
 import sys											# deal with OS, open files and so
 import time 										# delays, and time measurement ?
 
+import serial										# required to handle serial communication
+import serial.tools.list_ports						# to list already existing ports
+
+import logging
+#logging.basicConfig(level=logging.DEBUG)		# enable debug messages
+
 
 # qt imports #
 from PyQt5.QtWidgets import (
@@ -13,6 +19,8 @@ from PyQt5.QtWidgets import (
 	QComboBox,
 	QLineEdit,
 	QPushButton,
+	QMenuBar,
+	QToolBar,
 
 	QSystemTrayIcon,
 	QTextEdit,
@@ -114,12 +122,43 @@ class MyGraph(pg.PlotWidget):
 		# do something to set the default axes range
 
 class MainWindow(QMainWindow): 
+	
+	# class variables #
+	serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
+	
 	def __init__(self):
 		super().__init__()
 		# window stuff #
 		self.setWindowTitle("Arduino Plotter PyQt")						# relevant title 
 		self.setWindowIcon(QIcon("RE_logo_32p.png"))					# basic raquena engineering branding
 		self.resize(1200,800)											# setting initial window size
+		# menubar #
+		menu = self.menuBar()											# by default, the window already has an instance/object menubar
+		# file #
+		file_menu = menu.addMenu("&File")
+		serial_port_menu = file_menu.addMenu("Serial Port")
+		# here we need to add an entry for each serial port avaiable at the computer
+		# 1. How to get the list of available serial ports ?
+		self.get_serial_ports()											# meeded to list the serial ports at the menu
+		# 2. How to update the list of available serial ports ?
+		self.get_serial_ports()											# calling this function will update the list (use a timer???, thread???)
+		# 3. How to ensure which serial ports are available ? (grey out the unusable ones)
+		# 4. How to display properly each available serial port at the menu ?
+		for port in self.serial_ports:
+			serial_port_menu.addAction(port[0])
+		# about #
+		help_menu = menu.addMenu("&Help")
+		about_menu = help_menu.addAction("About")
+		
+		
+		button_action = QAction()
+		file_menu.addAction(button_action)
+		
+		#self.toolbar.setIconSize(Qsize(16,16))
+		#self.addToolBar(self.toolbar)
+		#self.menubar.addMenu("&file")
+		
+		
 		# central widget #
 		self.widget = QWidget()
 		self.layoutV1 = QVBoxLayout()									# that's how we will lay out the window
@@ -144,11 +183,36 @@ class MainWindow(QMainWindow):
 		self.combo_endline_params = QComboBox()
 		self.combo_endline_params.addItems(ENDLINE_OPTIONS)
 		self.layoutH1.addWidget(self.combo_endline_params)
-
-
 		
+
 		# show and done #
 		self.show()
+		
+		
+		
+	def get_serial_ports(self):
+				
+		logging.debug('Running get_serial_ports')
+		serial_port = None
+		self.serial_ports = list(serial.tools.list_ports.comports())
+		for p in self.serial_ports:
+			logging.debug(p)
+		logging.debug("---------------------------------------------------")
+		port_names = []		# we store all port names in this variable
+		for port in self.serial_ports:
+			port_names.append(port[0])	# here all names get stored
+		logging.debug(port_names)
+		logging.debug("---------------------------------------------------")
+		
+		# Note: not all the ports are valid options, so we could discard the that aren't interesting USING THE DESCRIPTION!
+		port_descs = []
+		for port in self.serial_ports:
+			port_descs.append(port[1])
+		logging.debug(port_descs)
+		logging.debug("---------------------------------------------------")
+		
+	def print_serial_ports(self):			# delete, just for testing !!!
+		print(self.serial_ports)
 
 
 
@@ -158,10 +222,7 @@ class MainWindow(QMainWindow):
 			# ~ b = QPaletteButton(c)
 			# ~ b.pressed.connect(lambda c = c: self.canvas.set_pen_color(c))	# not completely sure about how lambda functions work
 			# ~ layout.addWidget(b)
-			
-		
-		
-		
+
 
 		# ~ self.counter = 0
 		# ~ self.l = QLabel("Start")
@@ -169,6 +230,8 @@ class MainWindow(QMainWindow):
 		# ~ b.pressed.connect(self.oh_no)
 		# ~ self.layout.addWidget(self.l)
 		# ~ self.layout.addWidget(b)
+		
+		
 
 		
 
