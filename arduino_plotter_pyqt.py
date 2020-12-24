@@ -268,6 +268,7 @@ class MainWindow(QMainWindow):
 		
 	def serial_connect(self, port_name):
 		print("serial_connect method called")
+		print(port_name)
 		print("port name " + port_name)
 
 
@@ -291,7 +292,7 @@ class MainWindow(QMainWindow):
 				port_name = port[0]
 				print(port_name)
 				b = self.serial_port_menu.addAction(port_name)
-				b.triggered.connect((lambda: self.serial_connect(port_name)))				# just need to add somehow the serial port name here, and we're done.
+				b.triggered.connect((lambda : self.serial_connect(port_name)))				# just need to add somehow the serial port name here, and we're done.
 
 
 				# here we need to add the connect method to the action click, and its result
