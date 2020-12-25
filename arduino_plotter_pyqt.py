@@ -36,6 +36,9 @@ from PyQt5.QtGui import (
 
 from PyQt5.QtCore import(
 	Qt,
+	QThreadPool,
+	QRunnable,
+	QObject,
 	QSize
 )
 
@@ -112,10 +115,13 @@ ENDLINE_OPTIONS = [
 ]
 
 
+# THREAD STUFF #
 
+class Worker(QRunnable):
+	pass
 
-# MAIN WINDOW #
-
+class WorkerSignals(QObject):
+	pass
 
 class MyGraph(pg.PlotWidget):
 	def __init__(self):
@@ -133,16 +139,28 @@ class QPaletteButton(QPushButton):
 		self.setFixedSize(QSize(24,24))
 		self.color = color
 		self.setStyleSheet("background-color: " + color)				# the book uses c-ish like syntax. 
-					
+		
+		
+# MAIN WINDOW #			
 
 class MainWindow(QMainWindow): 
 	
 	# class variables #
 	serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
 	
+	serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
+	
 	# constructor # 
 	def __init__(self):
 		super().__init__()
+		# thread stuff # 
+		self.threadpool = QThreadPool()
+		print(
+			"Multithreading, max. Number of Threads:  " +
+			str(self.threadpool.maxThreadCount())
+		)
+		
+		
 		# window stuff #
 		self.setWindowTitle("Arduino Plotter PyQt")						# relevant title 
 		self.setWindowIcon(QIcon("RE_logo_32p.png"))					# basic raquena engineering branding
@@ -270,6 +288,36 @@ class MainWindow(QMainWindow):
 		print("serial_connect method called")
 		print(port_name)
 		print("port name " + port_name)
+		
+		try:
+			self.serial_port.close()
+		except:
+			print("serial port couldn't be closed, probably it was never open")
+		try:
+			self.serial_port = serial.Serial(		# serial constructor
+						port=port_name, 
+						baudrate=115200, 
+						#bytesize=EIGHTBITS, 
+						#parity=PARITY_NONE, 
+						#stopbits=STOPBITS_ONE, 
+						#timeout=None, 
+						timeout=5,										# we'll need a timeout just in case there's no communication
+						xonxoff=False, 
+						rtscts=False, 
+						write_timeout=None, 
+						dsrdtr=False, 
+						inter_byte_timeout=None, 
+						exclusive=None
+						)
+			print("Serial Port Connected")
+		except():
+			print("Serial connection has failed, try again")
+			
+		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
+			
+		readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
+		print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
+		
 
 
 	# creates a full palete with as many buttons as colors as defined in COLORS
