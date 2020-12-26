@@ -118,7 +118,17 @@ ENDLINE_OPTIONS = [
 # THREAD STUFF #
 
 class Worker(QRunnable):
-	pass
+	
+	def run(self):
+		print("Thread Start")
+		
+		while True:	# should be serial port isopen						# reading signals needs to be always active, until	
+			readed = mw.serial_port.read_until(b'\n')					# this should block the loop, so needs to go to a THREAD
+			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
+		
+		
+		
+		print("Thread Complete")
 
 class WorkerSignals(QObject):
 	pass
@@ -318,7 +328,9 @@ class MainWindow(QMainWindow):
 		readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
 		print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
 		
-
+		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
+		worker = Worker()
+		self.threadpool.start(worker)
 
 	# creates a full palete with as many buttons as colors as defined in COLORS
 	def add_palette_buttons(self,layout):
