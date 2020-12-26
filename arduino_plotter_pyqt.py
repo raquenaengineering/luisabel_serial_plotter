@@ -117,10 +117,16 @@ ENDLINE_OPTIONS = [
 
 # THREAD STUFF #
 
-class Worker(QRunnable):
+class Worker_serialport(QRunnable):
 	
 	def run(self):
 		print("Thread Start")
+		
+		#1 . GET THE SERIAL PORT NAME, USE WHATEVER TRICK.
+		#2 . LOOP GETTING DATA WHILE THE PORT IS OPEN, AND WORKING. HOW TO DETERMINE IT'S WORKING?
+		#3 . DO WHATEVER NEEDS TO BE DONE WITH THE DATAA.
+		
+		mw.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
 		while True:	# should be serial port isopen						# reading signals needs to be always active, until	
 			readed = mw.serial_port.read_until(b'\n')					# this should block the loop, so needs to go to a THREAD
@@ -159,6 +165,8 @@ class MainWindow(QMainWindow):
 	serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
 	
 	serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
+	serial_port_name = None												# used to pass it to the worker dealing with the serial port.
+	
 	
 	# constructor # 
 	def __init__(self):
@@ -180,7 +188,10 @@ class MainWindow(QMainWindow):
 		# file #
 		self.file_menu = menu.addMenu("&File")
 		self.serial_port_menu = self.file_menu.addMenu("Serial Port")
+		#self.serial_port_menu.triggered.connect(self.update_serial_ports)	# updates the serial port list everytime we click on it.
 		self.update_serial_ports()
+		self.refresh_menu = self.file_menu.addAction("Refresh")
+		self.refresh_menu.triggered.connect(self.update_serial_ports)
 
 		# about #
 		help_menu = menu.addMenu("&Help")
@@ -281,18 +292,20 @@ class MainWindow(QMainWindow):
 	def change_endline_style(self):										# this and previous method are the same, use lambdas?
 		endline_style = self.combo_endline_params.currentText()
 		print(endline_style)
-
-		
-	def select_serial_port(self):
-		serial_port_name = 	"s"
-		print(serial_port_name)
 		
 		
-		
-	def on_port_select(self):				# callback when COM port is selected at the menu.
+	def on_port_select(self,port_name):				# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
-		#2. open a serial communication.
-		pass
+		#2. delete the old list, and regenerate it, so when we push again the com port list is updated.
+		#3. create a thread for whatever related with the serial communication, and start running it.
+		#. open a serial communication. --> this belongs to the thread. 
+		
+		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
+		#self.serial_connect(port_name)
+		self.serial_port_name = port_name
+		worker_serialport = Worker_serialport()				# specific worker to handle serial port communication										
+		self.threadpool.start(worker_serialport)				
+		
 		
 	def serial_connect(self, port_name):
 		print("serial_connect method called")
@@ -324,13 +337,9 @@ class MainWindow(QMainWindow):
 			print("Serial connection has failed, try again")
 			
 		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
-			
+						
 		readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
 		print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
-		
-		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
-		worker = Worker()
-		self.threadpool.start(worker)
 
 	# creates a full palete with as many buttons as colors as defined in COLORS
 	def add_palette_buttons(self,layout):
@@ -343,6 +352,9 @@ class MainWindow(QMainWindow):
 	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
 		# here we need to add an entry for each serial port avaiable at the computer
 		# 1. How to get the list of available serial ports ?
+		
+		self.serial_port_menu.clear()									# deletes all old actions on serial port menu	
+		
 		self.get_serial_ports()											# meeded to list the serial ports at the menu
 		# 3. How to ensure which serial ports are available ? (grey out the unusable ones)
 		# 4. How to display properly each available serial port at the menu ?
@@ -352,15 +364,14 @@ class MainWindow(QMainWindow):
 				port_name = port[0]
 				print(port_name)
 				b = self.serial_port_menu.addAction(port_name)
-				b.triggered.connect((lambda serial_connect, port_name=port_name: self.serial_connect(port_name)))				# just need to add somehow the serial port name here, and we're done.
-
+				b.triggered.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))				# just need to add somehow the serial port name here, and we're done.
 
 				# here we need to add the connect method to the action click, and its result
 				
 		else:
 				self.noserials = serial_port_menu.addAction("No serial Ports detected")
 				self.noserials.setDisabled(True)
-				 	
+
 		
 app = QApplication(sys.argv)
 mw = MainWindow()
