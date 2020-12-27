@@ -135,14 +135,18 @@ class Worker_serialport(QRunnable):
 	def run(self):
 		print("Thread Start")
 		
-		#1 . GET THE SERIAL PORT NAME, USE WHATEVER TRICK.
-		#2 . LOOP GETTING DATA WHILE THE PORT IS OPEN, AND WORKING. HOW TO DETERMINE IT'S WORKING?
-		#3 . DO WHATEVER NEEDS TO BE DONE WITH THE DATAA.
+		#1 . CREATE A SERIAL PORT OBJECT.
 		
-		mw.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
+		self.serial_port = serial.Serial()
+		
+		
+		#2 . GET THE REQUIRED CONFIGURATION DATA OF THER SERIAL PORT FROM MAIN WINDOW
+		#3 . LOOP GETTING THE DATA WHILE THE PORT IS OPEN.
+		
+		self.serial_connect(mw.serial_port_name)						# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
 		while True:	# should be serial port isopen						# reading signals needs to be always active, until	
-			readed = mw.serial_port.read_until(mw.endline)					# this should block the loop, so needs to go to a THREAD
+			readed = self.serial_port.read_until(mw.endline)					# this should block the loop, so needs to go to a THREAD
 			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
 			print(mw.endline)
 			print(type(mw.endline)) 
@@ -151,10 +155,51 @@ class Worker_serialport(QRunnable):
 			
 			readed.replace(mw.endline,b'')								# remove endline character\s
 			
+		# 4. CLOSE THE OPEN PORT. 	
+			
 			print(readed)
-			5
 		
 		print("Thread Complete")
+		
+	def serial_connect(self, port_name):
+		print("serial_connect method called")
+		print(port_name)
+		print("port name " + port_name)
+		
+		try:
+			self.serial_port.close()
+		except:
+			print("serial port couldn't be closed, probably it was never open")
+		try:
+			
+			self.serial_port = serial.Serial(		# serial constructor
+						port=port_name, 
+						#baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
+						baudrate = 115200,
+						#bytesize=EIGHTBITS, 
+						#parity=PARITY_NONE, 
+						#stopbits=STOPBITS_ONE, 
+						#timeout=None, 
+						timeout=5,										# we'll need a timeout just in case there's no communication
+						xonxoff=False, 
+						rtscts=False, 
+						write_timeout=None, 
+						dsrdtr=False, 
+						inter_byte_timeout=None, 
+						exclusive=None
+						)
+			# serial port will be created anyway, here we will only open
+			# add instantation of serial port to the window constructor. 
+						
+			print("Serial Port Connected")
+		except():
+			print("Serial connection has failed, try again")
+			
+		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
+						
+		readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
+		print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
+
 
 class WorkerSignals(QObject):
 	pass
@@ -185,28 +230,14 @@ class MainWindow(QMainWindow):
 	serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
 	serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
 	serial_port_name = None												# used to pass it to the worker dealing with the serial port.
+	serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
 	endline = b'\r\n'													# default value for endline is NL 
+	
 	
 	# constructor # 
 	def __init__(self):
 		
 		super().__init__()
-		# serial stuff #
-		self.serial_port = serial.Serial(		# serial constructor
-			#port=port_name, 
-			baudrate= 9600,		# DEFAULT VALUE require it from the combobox 
-			#bytesize=EIGHTBITS, 
-			#parity=PARITY_NONE, 
-			#stopbits=STOPBITS_ONE, 
-			#timeout=None, 
-			timeout=5,										# we'll need a timeout just in case there's no communication
-			xonxoff=False, 
-			rtscts=False, 
-			write_timeout=None, 
-			dsrdtr=False, 
-			inter_byte_timeout=None, 
-			exclusive=None
-			)
 		
 		# thread stuff # 
 		self.threadpool = QThreadPool()
@@ -257,6 +288,7 @@ class MainWindow(QMainWindow):
 		self.combo_serial_speed = QComboBox()
 		self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
 		self.combo_serial_speed.addItems(SERIAL_SPEEDS)
+		self.combo_serial_speed.setCurrentIndex(9)						# this index corresponds to 115200 as default baudrate.
 		self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
 			self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?) 
 		self.layoutH1.addWidget(self.combo_serial_speed)				# 
@@ -270,6 +302,7 @@ class MainWindow(QMainWindow):
 		self.layoutH1.addWidget(self.b_send)
 		self.combo_endline_params = QComboBox()
 		self.combo_endline_params.addItems(ENDLINE_OPTIONS)
+		self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
 		self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
 		self.layoutH1.addWidget(self.combo_endline_params)
 		# ~ self.layoutH2 = QHBoxLayout()
@@ -326,7 +359,7 @@ class MainWindow(QMainWindow):
 		text_baud = self.combo_serial_speed.currentText()
 		baudrate = int(text_baud)
 		#self.serial_port.baudrate.set(baudrate)	
-		self.serial_port.baudrate = baudrate			
+		self.serial_baudrate = baudrate			
 		print(text_baud)
 		
 	def change_endline_style(self):										# this and previous method are the same, use lambdas?
@@ -358,43 +391,6 @@ class MainWindow(QMainWindow):
 		self.threadpool.start(worker_serialport)				
 		
 		
-	def serial_connect(self, port_name):
-		print("serial_connect method called")
-		print(port_name)
-		print("port name " + port_name)
-		
-		try:
-			self.serial_port.close()
-		except:
-			print("serial port couldn't be closed, probably it was never open")
-		try:
-			
-			# ~ self.serial_port = serial.Serial(		# serial constructor
-						# ~ port=port_name, 
-						# ~ baudrate=int(self.combo_serial_speed.currentText()),		# require it from the combobox 
-						# ~ #bytesize=EIGHTBITS, 
-						# ~ #parity=PARITY_NONE, 
-						# ~ #stopbits=STOPBITS_ONE, 
-						# ~ #timeout=None, 
-						# ~ timeout=5,										# we'll need a timeout just in case there's no communication
-						# ~ xonxoff=False, 
-						# ~ rtscts=False, 
-						# ~ write_timeout=None, 
-						# ~ dsrdtr=False, 
-						# ~ inter_byte_timeout=None, 
-						# ~ exclusive=None
-						# ~ )
-			# serial port will be created anyway, here we will only open
-			# add instantation of serial port to the window constructor. 
-						
-			print("Serial Port Connected")
-		except():
-			print("Serial connection has failed, try again")
-			
-		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
-						
-		readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
-		print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
 
 	# creates a full palete with as many buttons as colors as defined in COLORS
 	def add_palette_buttons(self,layout):
@@ -409,7 +405,9 @@ class MainWindow(QMainWindow):
 		# 1. How to get the list of available serial ports ?
 		
 		self.serial_port_menu.clear()									# deletes all old actions on serial port menu	
-		self.serial_port.close()										# close the current serial port. 
+		# closing the serial port should be handled by the thread
+		# this should trigger a change which will be handled by the thread.
+		#self.serial_port.close()										# close the current serial port. 
 		
 		
 		self.get_serial_ports()											# meeded to list the serial ports at the menu
