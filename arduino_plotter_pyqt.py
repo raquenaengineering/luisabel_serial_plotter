@@ -47,6 +47,8 @@ import pyqtgraph as pg
 
 # GLOBAL VARIABLES #
 
+SERIAL_BUFFER_SIZE = 1000												# buffer size to store the incoming data from serial, to afterwards process it.
+
 COLORS = [
 # 17 undertones https://lospec.com/palette-list/17undertones
 "#000000",
@@ -115,6 +117,17 @@ ENDLINE_OPTIONS = [
 ]
 
 
+# ~ if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
+	# ~ self.endline = b""
+# ~ elif (endline_style == ENDLINE_OPTIONS[1]):						# "New Line"
+	# ~ self.endline = b"\n"				
+# ~ elif (endline_style == ENDLINE_OPTIONS[2]):						# "Carriage Return"
+	# ~ self.endline = b"\r"		
+# ~ elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
+	# ~ self.endline = b"\r\n"	
+	
+
+
 # THREAD STUFF #
 
 class Worker_serialport(QRunnable):
@@ -129,10 +142,17 @@ class Worker_serialport(QRunnable):
 		mw.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
 		while True:	# should be serial port isopen						# reading signals needs to be always active, until	
-			readed = mw.serial_port.read_until(b'\n')					# this should block the loop, so needs to go to a THREAD
-			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
-		
-		
+			readed = mw.serial_port.read_until(mw.endline)					# this should block the loop, so needs to go to a THREAD
+			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
+			print(mw.endline)
+			print(type(mw.endline)) 
+			print(type(readed))
+			print(type(b'')) 
+			
+			readed.replace(mw.endline,b'')								# remove endline character\s
+			
+			print(readed)
+			5
 		
 		print("Thread Complete")
 
@@ -163,14 +183,31 @@ class MainWindow(QMainWindow):
 	
 	# class variables #
 	serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
-	
 	serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
 	serial_port_name = None												# used to pass it to the worker dealing with the serial port.
-	
+	endline = b'\r\n'													# default value for endline is NL 
 	
 	# constructor # 
 	def __init__(self):
+		
 		super().__init__()
+		# serial stuff #
+		self.serial_port = serial.Serial(		# serial constructor
+			#port=port_name, 
+			baudrate= 9600,		# DEFAULT VALUE require it from the combobox 
+			#bytesize=EIGHTBITS, 
+			#parity=PARITY_NONE, 
+			#stopbits=STOPBITS_ONE, 
+			#timeout=None, 
+			timeout=5,										# we'll need a timeout just in case there's no communication
+			xonxoff=False, 
+			rtscts=False, 
+			write_timeout=None, 
+			dsrdtr=False, 
+			inter_byte_timeout=None, 
+			exclusive=None
+			)
+		
 		# thread stuff # 
 		self.threadpool = QThreadPool()
 		print(
@@ -284,15 +321,29 @@ class MainWindow(QMainWindow):
 		
 
 		
-	def change_serial_speed(self):
+	def change_serial_speed(self):										# this function is useless ATM, as the value is asked when serial open again.
 		print("change_serial_speed method called")
-		text_val = self.combo_serial_speed.currentText()
-		print(text_val)
+		text_baud = self.combo_serial_speed.currentText()
+		baudrate = int(text_baud)
+		#self.serial_port.baudrate.set(baudrate)	
+		self.serial_port.baudrate = baudrate			
+		print(text_baud)
 		
 	def change_endline_style(self):										# this and previous method are the same, use lambdas?
 		endline_style = self.combo_endline_params.currentText()
 		print(endline_style)
-		
+		# FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
+		if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
+			self.endline = b""
+		elif (endline_style == ENDLINE_OPTIONS[1]):						# "New Line"
+			self.endline = b"\n"				
+		elif (endline_style == ENDLINE_OPTIONS[2]):						# "Carriage Return"
+			self.endline = b"\r"		
+		elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
+			self.endline = b"\r\n"	
+			
+		print(self.endline)	
+				
 		
 	def on_port_select(self,port_name):				# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
@@ -317,21 +368,25 @@ class MainWindow(QMainWindow):
 		except:
 			print("serial port couldn't be closed, probably it was never open")
 		try:
-			self.serial_port = serial.Serial(		# serial constructor
-						port=port_name, 
-						baudrate=115200, 
-						#bytesize=EIGHTBITS, 
-						#parity=PARITY_NONE, 
-						#stopbits=STOPBITS_ONE, 
-						#timeout=None, 
-						timeout=5,										# we'll need a timeout just in case there's no communication
-						xonxoff=False, 
-						rtscts=False, 
-						write_timeout=None, 
-						dsrdtr=False, 
-						inter_byte_timeout=None, 
-						exclusive=None
-						)
+			
+			# ~ self.serial_port = serial.Serial(		# serial constructor
+						# ~ port=port_name, 
+						# ~ baudrate=int(self.combo_serial_speed.currentText()),		# require it from the combobox 
+						# ~ #bytesize=EIGHTBITS, 
+						# ~ #parity=PARITY_NONE, 
+						# ~ #stopbits=STOPBITS_ONE, 
+						# ~ #timeout=None, 
+						# ~ timeout=5,										# we'll need a timeout just in case there's no communication
+						# ~ xonxoff=False, 
+						# ~ rtscts=False, 
+						# ~ write_timeout=None, 
+						# ~ dsrdtr=False, 
+						# ~ inter_byte_timeout=None, 
+						# ~ exclusive=None
+						# ~ )
+			# serial port will be created anyway, here we will only open
+			# add instantation of serial port to the window constructor. 
+						
 			print("Serial Port Connected")
 		except():
 			print("Serial connection has failed, try again")
@@ -354,6 +409,8 @@ class MainWindow(QMainWindow):
 		# 1. How to get the list of available serial ports ?
 		
 		self.serial_port_menu.clear()									# deletes all old actions on serial port menu	
+		self.serial_port.close()										# close the current serial port. 
+		
 		
 		self.get_serial_ports()											# meeded to list the serial ports at the menu
 		# 3. How to ensure which serial ports are available ? (grey out the unusable ones)
