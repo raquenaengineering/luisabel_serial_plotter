@@ -145,20 +145,19 @@ class Worker_serialport(QRunnable):
 		
 		self.serial_connect(mw.serial_port_name)						# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
-		while True:	# should be serial port isopen						# reading signals needs to be always active, until	
+		while (self.serial_port.is_open == True):						# should be serial port isopen						# reading signals needs to be always active, until	
 			readed = self.serial_port.read_until(mw.endline)					# this should block the loop, so needs to go to a THREAD
 			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
 			print(mw.endline)
-			print(type(mw.endline)) 
-			print(type(readed))
-			print(type(b'')) 
+			# ~ print(type(mw.endline)) 
+			# ~ print(type(readed))
+			# ~ print(type(b'')) 
 			
 			readed.replace(mw.endline,b'')								# remove endline character\s
-			
+			#print(readed)
+
 		# 4. CLOSE THE OPEN PORT. 	
 			
-			print(readed)
-		
 		print("Thread Complete")
 		
 	def serial_connect(self, port_name):
@@ -168,14 +167,15 @@ class Worker_serialport(QRunnable):
 		
 		try:
 			self.serial_port.close()
+			print("Serial port closed succesfully ??")
 		except:
 			print("serial port couldn't be closed, probably it was never open")
 		try:
-			
+			print("trying to create serial port ")		
 			self.serial_port = serial.Serial(		# serial constructor
 						port=port_name, 
-						#baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
-						baudrate = 115200,
+						baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
+						#baudrate = 115200,
 						#bytesize=EIGHTBITS, 
 						#parity=PARITY_NONE, 
 						#stopbits=STOPBITS_ONE, 
@@ -191,14 +191,14 @@ class Worker_serialport(QRunnable):
 			# serial port will be created anyway, here we will only open
 			# add instantation of serial port to the window constructor. 
 						
-			print("Serial Port Connected")
-		except():
+			#print("Serial Port Connected")
+		except:
 			print("Serial connection has failed, try again")
 			
 		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
 						
-		readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
-		print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
+		#readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
+		#print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
 
 
 class WorkerSignals(QObject):
@@ -241,6 +241,9 @@ class MainWindow(QMainWindow):
 		
 		# thread stuff # 
 		self.threadpool = QThreadPool()
+		# IS THE WORKER_SERIALPORT OBJECT ALWAYS EXISTING, OR IT DISAPPEARS AFTER EVERY END OF EXECUTION ???
+		# DO I HAVE TO INSTANTIATE IT EVERY TIME I MAKE A CONNECTION ???
+		self.worker_serialport = Worker_serialport()					# specific worker to handle serial port communication										
 		print(
 			"Multithreading, max. Number of Threads:  " +
 			str(self.threadpool.maxThreadCount())
@@ -257,7 +260,7 @@ class MainWindow(QMainWindow):
 		self.file_menu = menu.addMenu("&File")
 		self.serial_port_menu = self.file_menu.addMenu("Serial Port")
 		#self.serial_port_menu.triggered.connect(self.update_serial_ports)	# updates the serial port list everytime we click on it.
-		self.update_serial_ports()
+		#self.update_serial_ports()										# needs to be moved after the declaration of update_serial_ports!!!	
 		self.refresh_menu = self.file_menu.addAction("Refresh")
 		self.refresh_menu.triggered.connect(self.update_serial_ports)
 
@@ -285,6 +288,23 @@ class MainWindow(QMainWindow):
 		# buttons / menus # 
 		self.layoutH1 = QHBoxLayout()
 		self.layoutV1.addLayout(self.layoutH1)
+		# connect button #
+		self.button_serial_connect = QPushButton("Connect")
+		self.button_serial_connect.clicked.connect(self.on_button_connect_click)
+		self.layoutH1.addWidget(self.button_serial_connect)
+		# disconnect button #
+		self.button_serial_disconnect = QPushButton("Disconnect")
+		self.button_serial_disconnect.clicked.connect(self.on_button_disconnect_click)
+		self.layoutH1.addWidget(self.button_serial_disconnect)
+		# combo serial port #
+		self.combo_serial_port = QComboBox()
+		self.layoutH1.addWidget(self.combo_serial_port)
+		self.update_serial_ports()
+		self.combo_serial_port.currentTextChanged.connect(				# changing something at this label, triggers on_port select, which should trigger a serial port characteristics update.
+			self.on_port_select)
+		self.label_port = QLabel("Port")
+		self.layoutH1.addWidget(self.label_port)
+		# combo serial speed #
 		self.combo_serial_speed = QComboBox()
 		self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
 		self.combo_serial_speed.addItems(SERIAL_SPEEDS)
@@ -294,12 +314,14 @@ class MainWindow(QMainWindow):
 		self.layoutH1.addWidget(self.combo_serial_speed)				# 
 		self.label_baud = QLabel("baud")
 		self.layoutH1.addWidget(self.label_baud)
+		# text box command #
 		self.textbox_send_command = QLineEdit()
 		self.textbox_send_command.returnPressed.connect(self.send_serial)			# sends command via serial port
 		self.layoutH1.addWidget(self.textbox_send_command)
 		self.b_send = QPushButton("Send")											
 		self.b_send.clicked.connect(self.send_serial)								# same action as enter in textbox
 		self.layoutH1.addWidget(self.b_send)
+		# combo endline #
 		self.combo_endline_params = QComboBox()
 		self.combo_endline_params.addItems(ENDLINE_OPTIONS)
 		self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
@@ -376,8 +398,18 @@ class MainWindow(QMainWindow):
 			self.endline = b"\r\n"	
 			
 		print(self.endline)	
-				
 		
+		
+	def on_button_connect_click(self):									# this button changes text to disconnect when a connection is succesful.
+		print("Connect Button Clicked")									# how to determine a connection was succesful ???
+		self.threadpool.start(self.worker_serialport)
+		
+	def on_button_disconnect_click(self):
+		print("Disconnect Button Clicked")
+		# 1. Close serial port, but: how do I close the serial port of the thread from this button ?
+		# 2. Kill thread so we can start it new ? OR prevent thread of doing anything and keep it alive ???
+		
+					
 	def on_port_select(self,port_name):				# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
 		#2. delete the old list, and regenerate it, so when we push again the com port list is updated.
@@ -386,9 +418,12 @@ class MainWindow(QMainWindow):
 		
 		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
 		#self.serial_connect(port_name)
+		print("Method on_port_select called	")
 		self.serial_port_name = port_name
-		worker_serialport = Worker_serialport()				# specific worker to handle serial port communication										
-		self.threadpool.start(worker_serialport)				
+		print(self.serial_port_name)
+		
+		
+				
 		
 		
 
@@ -419,9 +454,18 @@ class MainWindow(QMainWindow):
 				port_name = port[0]
 				print(port_name)
 				b = self.serial_port_menu.addAction(port_name)
+				# WE WON'T TRIGGER THE CONNECTION FROM THE BUTTON PUSH ANYMORE. 
 				b.triggered.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))				# just need to add somehow the serial port name here, and we're done.
 
 				# here we need to add the connect method to the action click, and its result
+				
+			for port in self.serial_ports:								# same as adding all ports to action menu, but now using combo box. 
+				port_name = port[0]	
+				item = self.combo_serial_port.addItem(port_name)		# add new items 
+				
+				#b.currentTextChanged.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))
+				
+				
 				
 		else:
 				self.noserials = serial_port_menu.addAction("No serial Ports detected")
