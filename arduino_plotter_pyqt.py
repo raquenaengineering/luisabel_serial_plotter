@@ -132,6 +132,8 @@ ENDLINE_OPTIONS = [
 
 class Worker_serialport(QRunnable):
 	
+	done = False															# if done, thread should finish.	
+	
 	def run(self):
 		print("Thread Start")
 		
@@ -143,10 +145,10 @@ class Worker_serialport(QRunnable):
 		#2 . GET THE REQUIRED CONFIGURATION DATA OF THER SERIAL PORT FROM MAIN WINDOW
 		#3 . LOOP GETTING THE DATA WHILE THE PORT IS OPEN.
 		
-		self.serial_connect(mw.serial_port_name)						# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
+		self.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
-		while (self.serial_port.is_open == True):						# should be serial port isopen						# reading signals needs to be always active, until	
-			readed = self.serial_port.read_until(mw.endline)					# this should block the loop, so needs to go to a THREAD
+		while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
+			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
 			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
 			print(mw.endline)
 			# ~ print(type(mw.endline)) 
@@ -243,7 +245,8 @@ class MainWindow(QMainWindow):
 		self.threadpool = QThreadPool()
 		# IS THE WORKER_SERIALPORT OBJECT ALWAYS EXISTING, OR IT DISAPPEARS AFTER EVERY END OF EXECUTION ???
 		# DO I HAVE TO INSTANTIATE IT EVERY TIME I MAKE A CONNECTION ???
-		self.worker_serialport = Worker_serialport()					# specific worker to handle serial port communication										
+		# declaration of the worker_serialport moved to the connect_click button
+		#self.worker_serialport = Worker_serialport()					# specific worker to handle serial port communication										
 		print(
 			"Multithreading, max. Number of Threads:  " +
 			str(self.threadpool.maxThreadCount())
@@ -295,6 +298,7 @@ class MainWindow(QMainWindow):
 		# disconnect button #
 		self.button_serial_disconnect = QPushButton("Disconnect")
 		self.button_serial_disconnect.clicked.connect(self.on_button_disconnect_click)
+		self.button_serial_disconnect.setEnabled(False)
 		self.layoutH1.addWidget(self.button_serial_disconnect)
 		# combo serial port #
 		self.combo_serial_port = QComboBox()
@@ -336,9 +340,14 @@ class MainWindow(QMainWindow):
 		self.setStatusBar(self.status_bar)
 		self.status_bar.showMessage("Not Connected")
 		# 3. write text saying no serial port is connected
-
-		# show and done #
+		
+		# show and done #		
 		self.show()
+		
+		# other stuff which can't be done before #
+		self.serial_port_name = self.combo_serial_port.currentText()	
+		# self.serial_baudrate = ...
+		# self.endline = ...
 		
 		
 		# actions #		
@@ -402,10 +411,18 @@ class MainWindow(QMainWindow):
 		
 	def on_button_connect_click(self):									# this button changes text to disconnect when a connection is succesful.
 		print("Connect Button Clicked")									# how to determine a connection was succesful ???
-		self.threadpool.start(self.worker_serialport)
+		self.button_serial_connect.setEnabled(False)
+		self.button_serial_disconnect.setEnabled(True)
+		self.worker_serialport = Worker_serialport()					# creates a serialport worker every time we push the button, PLEASE NOTE IT ALSO NEEDS TO BE DESTROYED!!!
+		self.threadpool.start(self.worker_serialport)					
 		
 	def on_button_disconnect_click(self):
 		print("Disconnect Button Clicked")
+		self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
+		self.button_serial_connect.setEnabled(True)
+		self.worker_serialport.done = True								# finishes the thread execution
+		
+		
 		# 1. Close serial port, but: how do I close the serial port of the thread from this button ?
 		# 2. Kill thread so we can start it new ? OR prevent thread of doing anything and keep it alive ???
 		
@@ -421,6 +438,7 @@ class MainWindow(QMainWindow):
 		print("Method on_port_select called	")
 		self.serial_port_name = port_name
 		print(self.serial_port_name)
+		
 		
 		
 				
