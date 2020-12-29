@@ -149,17 +149,31 @@ class Worker_serialport(QRunnable):
 		
 		while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
 			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
+			print("String as readed: ")
 			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
+			print("Endline: ")
 			print(mw.endline)
-			# ~ print(type(mw.endline)) 
-			# ~ print(type(readed))
-			# ~ print(type(b'')) 
+			print("Readed.endline found at character: ")
+			i = readed.find(mw.endline)									# index where the the endline starts.
+			readed = readed[:i]									
+			#readed.replace(mw.endline,b'')								# remove endline character\s THIS WON'T WORK, BETTER TO USE A FIND AND REMOVE EVERYTHING AFTER THAT. 
+			readed = readed.decode("utf-8")								# convert to string
+			vals_text = readed.split(',')								# I may need a better way to separate the different values of the message!
+			print("vals_text")
+			print(vals_text)
+			for val in vals_text:
+				val = int(val)											# convert to integer (INTEGERS IN PYTHON ARE NOT LIMITED TO 8BITS!) values
+			vals_text = vals
+			print(vals)
 			
-			readed.replace(mw.endline,b'')								# remove endline character\s
-			#print(readed)
+			
+			
+			print("Serial after removing endline character")
+			print(readed)
 
 		# 4. CLOSE THE OPEN PORT. 	
 			
+		mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
 		print("Thread Complete")
 		
 	def serial_connect(self, port_name):
@@ -413,6 +427,9 @@ class MainWindow(QMainWindow):
 		print("Connect Button Clicked")									# how to determine a connection was succesful ???
 		self.button_serial_connect.setEnabled(False)
 		self.button_serial_disconnect.setEnabled(True)
+		self.combo_serial_port.setEnabled(False)
+		self.combo_serial_speed.setEnabled(False)
+		self.combo_endline_params.setEnabled(False)
 		self.worker_serialport = Worker_serialport()					# creates a serialport worker every time we push the button, PLEASE NOTE IT ALSO NEEDS TO BE DESTROYED!!!
 		self.threadpool.start(self.worker_serialport)					
 		
@@ -420,6 +437,9 @@ class MainWindow(QMainWindow):
 		print("Disconnect Button Clicked")
 		self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
 		self.button_serial_connect.setEnabled(True)
+		self.combo_serial_port.setEnabled(True)
+		self.combo_serial_speed.setEnabled(True)
+		self.combo_endline_params.setEnabled(True)
 		self.worker_serialport.done = True								# finishes the thread execution
 		
 		
@@ -458,6 +478,7 @@ class MainWindow(QMainWindow):
 		# 1. How to get the list of available serial ports ?
 		
 		self.serial_port_menu.clear()									# deletes all old actions on serial port menu	
+		self.combo_serial_port.clear()
 		# closing the serial port should be handled by the thread
 		# this should trigger a change which will be handled by the thread.
 		#self.serial_port.close()										# close the current serial port. 
