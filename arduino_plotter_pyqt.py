@@ -6,7 +6,7 @@ import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
 
 import logging
-#logging.basicConfig(level=logging.DEBUG)		# enable debug messages
+logging.basicConfig(level=logging.DEBUG)		# enable debug messages
 
 
 # qt imports #
@@ -48,6 +48,8 @@ import pyqtgraph as pg
 # GLOBAL VARIABLES #
 
 SERIAL_BUFFER_SIZE = 1000												# buffer size to store the incoming data from serial, to afterwards process it.
+SEPARATOR = "----------------------------------------------------------"
+
 
 COLORS = [
 # 17 undertones https://lospec.com/palette-list/17undertones
@@ -155,17 +157,24 @@ class Worker_serialport(QRunnable):
 			print(mw.endline)
 			print("Readed.endline found at character: ")
 			i = readed.find(mw.endline)									# index where the the endline starts.
-			readed = readed[:i]									
-			#readed.replace(mw.endline,b'')								# remove endline character\s THIS WON'T WORK, BETTER TO USE A FIND AND REMOVE EVERYTHING AFTER THAT. 
+			readed = readed[:i]											# this removes the endline.								
 			readed = readed.decode("utf-8")								# convert to string
 			vals_text = readed.split(',')								# I may need a better way to separate the different values of the message!
 			print("vals_text")
 			print(vals_text)
-			for val in vals_text:
-				val = int(val)											# convert to integer (INTEGERS IN PYTHON ARE NOT LIMITED TO 8BITS!) values
-			vals_text = vals
-			print(vals)
 			
+			# 1. case empty string?
+			if(vals_text[0]) == '':
+				print("Empty string readed, ignore it")
+			else:
+				try:
+					for val in vals_text:
+						val = float(val)									# let's use floats as default (even though they may be only integers on the other side)
+					vals_text = vals
+					print(vals)
+				except:
+					print("Conversion failed, the data not only contains numbers")
+					# mw.on_button_disconnect_click()
 			
 			
 			print("Serial after removing endline character")
@@ -175,17 +184,26 @@ class Worker_serialport(QRunnable):
 			
 		mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
 		print("Thread Complete")
+		print(SEPARATOR)
 		
 	def serial_connect(self, port_name):
 		print("serial_connect method called")
 		print(port_name)
 		print("port name " + port_name)
 		
+		print("Serial port is_open variable")
+		print(self.serial_port.is_open)
+		
 		try:
 			self.serial_port.close()
-			print("Serial port closed succesfully ??")
+			print("Serial port closed succesfully ???")					# even though the port can't be closed, this message is shown. why ???
 		except:
-			print("serial port couldn't be closed, probably it was never open")
+			print("serial port couldn't be closed")
+			
+		if(self.serial_port.is_open == True):
+			print("SOMEBODY ELSE IS USING IT")
+		else:				
+			print("WAS NEVER OPEN ")
 		try:
 			print("trying to create serial port ")		
 			self.serial_port = serial.Serial(		# serial constructor
@@ -210,6 +228,27 @@ class Worker_serialport(QRunnable):
 			#print("Serial Port Connected")
 		except:
 			print("Serial connection has failed, try again")
+			
+			
+
+		# ~ self.serial_port = serial.Serial(		# serial constructor
+					# ~ port=port_name, 
+					# ~ baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
+					# ~ #baudrate = 115200,
+					# ~ #bytesize=EIGHTBITS, 
+					# ~ #parity=PARITY_NONE, 
+					# ~ #stopbits=STOPBITS_ONE, 
+					# ~ #timeout=None, 
+					# ~ timeout=5,										# we'll need a timeout just in case there's no communication
+					# ~ xonxoff=False, 
+					# ~ rtscts=False, 
+					# ~ write_timeout=None, 
+					# ~ dsrdtr=False, 
+					# ~ inter_byte_timeout=None, 
+					# ~ exclusive=None
+					# ~ )
+
+
 			
 		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
 						
@@ -376,28 +415,56 @@ class MainWindow(QMainWindow):
 	
 	# other methods # 
 		
-	def get_serial_ports(self):
+	def get_serial_ports(self):			# REWRITE THIS FUNCTION TO USE A DICTIONARY, AND MAKE IT WAY CLEANER !!!
 				
 		logging.debug('Running get_serial_ports')
 		serial_port = None
-		self.serial_ports = list(serial.tools.list_ports.comports())
-		for p in self.serial_ports:
-			logging.debug(p)
-		logging.debug("---------------------------------------------------")
+		self.serial_ports = list(serial.tools.list_ports.comports())	# THIS IS THE ONLY PLACE WHERE THE OS SERIAL PORT LIST IS READ. 	
+		
 		port_names = []		# we store all port names in this variable
+		port_descs = []		# all descriptions
+		port_btenums = []	# all bluetooth enumerations, if proceeds
 		for port in self.serial_ports:
 			port_names.append(port[0])	# here all names get stored
-		logging.debug(port_names)
-		logging.debug("---------------------------------------------------")
-		
-		# Note: not all the ports are valid options, so we could discard the that aren't interesting USING THE DESCRIPTION!
-		port_descs = []
-		for port in self.serial_ports:
 			port_descs.append(port[1])
-		logging.debug(port_descs)
+			port_btenums.append(port[2])
+			
+		for name in port_names:
+			logging.debug(name)
 		logging.debug("---------------------------------------------------")
-		
 
+		for desc in port_descs:
+			logging.debug(desc)
+		logging.debug("---------------------------------------------------")
+
+		for btenum in port_btenums:
+			logging.debug(btenum)
+		logging.debug("---------------------------------------------------")
+						
+		# remove bad BT ports (windows creates 2 ports, only one is useful to connect)
+		
+		for port in self.serial_ports:
+			
+			port_desc = port[1]
+			
+			if (port_desc.find("Bluetooth") != -1):						# Bluetooth found on description,so is a BT port (good or bad, dunno yet)
+				
+				# Using the description as the bt serial ports to find out the "good" bluetooth port.
+				port_btenum = port[2]
+				port_btenum = str(port_btenum)
+				splitted_enum = port_btenum.split('&')
+				logging.debug(splitted_enum)							# uncomment this to see why this parameter was used to differentiate bt ports.
+				last_param = splitted_enum[-1]							# this contains the last parameter of the bt info, which is different between incoming and outgoing bt serial ports. 
+				last_field = last_param.split('_')						# here there is the real difference between the two created com ports
+				last_field = last_field[-1]								# we get only the part after the '_'
+				logging.debug(last_field)
+				
+				if(last_field == "C00000000"):							# this special string is what defines what are the valid COM ports.
+					discarded = 0										# the non-valid COM ports have a field liked this: "00000001", and subsequent.
+				else:
+					discarded = 1
+					logging.debug("This port should be discarded!")
+					self.serial_ports.remove(port)						# removes by matching description
 		
 	def change_serial_speed(self):										# this function is useless ATM, as the value is asked when serial open again.
 		print("change_serial_speed method called")
