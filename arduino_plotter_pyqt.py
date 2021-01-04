@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import (
 	QMenuBar,
 	QToolBar,
 	QStatusBar,
+	QDialog,
+	QMessageBox,														# Dialog with extended functionality. 
 
 	QSystemTrayIcon,
 	QTextEdit,
@@ -39,7 +41,11 @@ from PyQt5.QtCore import(
 	QThreadPool,
 	QRunnable,
 	QObject,
-	QSize
+	QSize,
+	pyqtSignal,															# those two are pyqt specific. 
+	pyqtSlot,
+	QTimer																# nasty stuff
+
 )
 
 import pyqtgraph as pg
@@ -119,23 +125,22 @@ ENDLINE_OPTIONS = [
 ]
 
 
-# ~ if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
-	# ~ self.endline = b""
-# ~ elif (endline_style == ENDLINE_OPTIONS[1]):						# "New Line"
-	# ~ self.endline = b"\n"				
-# ~ elif (endline_style == ENDLINE_OPTIONS[2]):						# "Carriage Return"
-	# ~ self.endline = b"\r"		
-# ~ elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
-	# ~ self.endline = b"\r\n"	
-	
-
-
 # THREAD STUFF #
 
 class Worker_serialport(QRunnable):
 	
-	done = False															# if done, thread should finish.	
 	
+	# class variables #
+	
+	done = False														# if done, thread should finish.
+	
+	
+	# ~ ## constructor ##													# how does it work with the constructor and the run method ??
+	# ~ def __init__(self):														
+		# ~ self.signals = WorkerSignals_serialport()						# signals triggered by the thread, to communicate with the MAIN WINDOW
+		
+		
+	## run method ##
 	def run(self):
 		print("Thread Start")
 		
@@ -163,7 +168,7 @@ class Worker_serialport(QRunnable):
 			print("vals_text")
 			print(vals_text)
 			
-			# 1. case empty string?
+			# 1. case empty string?										# THAT'S BAD...., EMPTY STRING IS USED AS RETURN VALUE FOR TIMEOUT !!!
 			if(vals_text[0]) == '':
 				print("Empty string readed, ignore it")
 			else:
@@ -181,6 +186,11 @@ class Worker_serialport(QRunnable):
 			print(readed)
 
 		# 4. CLOSE THE OPEN PORT. 	
+		
+		print("serial_port.is_open:")
+		print(self.serial_port.is_open)
+		print("done")
+		print(self.done)		
 			
 		mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
 		print("Thread Complete")
@@ -190,74 +200,110 @@ class Worker_serialport(QRunnable):
 		print("serial_connect method called")
 		print(port_name)
 		print("port name " + port_name)
-		
-		print("Serial port is_open variable")
-		print(self.serial_port.is_open)
-		
-		try:
+
+		try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
 			self.serial_port.close()
-			print("Serial port closed succesfully ???")					# even though the port can't be closed, this message is shown. why ???
+			print("Serial port closed")	
+			print("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
 		except:
 			print("serial port couldn't be closed")
-			
-		if(self.serial_port.is_open == True):
-			print("SOMEBODY ELSE IS USING IT")
-		else:				
-			print("WAS NEVER OPEN ")
+			print("Wasn't open, as it should always be")
+
+
 		try:
-			print("trying to create serial port ")		
 			self.serial_port = serial.Serial(		# serial constructor
-						port=port_name, 
-						baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
-						#baudrate = 115200,
-						#bytesize=EIGHTBITS, 
-						#parity=PARITY_NONE, 
-						#stopbits=STOPBITS_ONE, 
-						#timeout=None, 
-						timeout=5,										# we'll need a timeout just in case there's no communication
-						xonxoff=False, 
-						rtscts=False, 
-						write_timeout=None, 
-						dsrdtr=False, 
-						inter_byte_timeout=None, 
-						exclusive=None
-						)
-			# serial port will be created anyway, here we will only open
-			# add instantation of serial port to the window constructor. 
-						
-			#print("Serial Port Connected")
+				port=port_name, 
+				baudrate= mw.serial_baudrate,		
+				#baudrate = 115200,
+				#bytesize=EIGHTBITS, 
+				#parity=PARITY_NONE, 
+				#stopbits=STOPBITS_ONE, 
+				#timeout=None, 
+				timeout=3,										# we'll need a timeout just in case there's no communication
+				xonxoff=False, 
+				rtscts=False, 
+				write_timeout=None, 
+				dsrdtr=False, 
+				inter_byte_timeout=None, 
+				exclusive=None
+				)
+			
+		except Exception as e:								# both port open, and somebody else blocking the port are IO errors.
+			print("ERROR OPENING SERIAL PORT")
+			desc = str(e)
+			print(type(e))
+			print(desc)
+			i = desc.find("Port is already open.")
+			if(i != -1):
+				print("PORT ALREADY OPEN BY THIS APPLICATION")
+			print(i)
+			
+			i = desc.find("FileNotFoundError")
+			if(i != -1):
+				print("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
+				mw.on_port_error(2)										# 
+					
+			i = desc.find("PermissionError")
+			if(i != -1):
+				print("SOMEONE ELSE HAS OPEN THE PORT")
+				mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+				
+				
 		except:
-			print("Serial connection has failed, try again")
-			
-			
+			print("UNKNOWN ERROR OPENING SERIAL PORT")
+	
+				
 
-		# ~ self.serial_port = serial.Serial(		# serial constructor
-					# ~ port=port_name, 
-					# ~ baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
-					# ~ #baudrate = 115200,
-					# ~ #bytesize=EIGHTBITS, 
-					# ~ #parity=PARITY_NONE, 
-					# ~ #stopbits=STOPBITS_ONE, 
-					# ~ #timeout=None, 
-					# ~ timeout=5,										# we'll need a timeout just in case there's no communication
-					# ~ xonxoff=False, 
-					# ~ rtscts=False, 
-					# ~ write_timeout=None, 
-					# ~ dsrdtr=False, 
-					# ~ inter_byte_timeout=None, 
-					# ~ exclusive=None
-					# ~ )
-
-
+		else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
+			print("SERIAL PORT OPEN SUCCESFULLY!")
+			# here we should also add going  to the "DISCONNECT" state.
 			
-		#self.serial_port.open()										# when port name is given on instantiation, the port is open inmediately. maybe interesting to change to instantation without port name.
+		# ~ finally:
+			# ~ print("FINALLY TENSE")
+				
+		print("serial_port.is_open:")
+		print(self.serial_port.is_open)
+		print("done: ")
+		print(self.done)	
+		
+		# ~ try:
+			# ~ self.serial_port.close()
+			# ~ print("Serial port closed succesfully ???")					# even though the port can't be closed, this message is shown. why ???
+		# ~ except:
+			# ~ print("serial port couldn't be closed")
+			
+		# ~ if(self.serial_port.is_open == True):
+			# ~ print("SOMEBODY ELSE IS USING IT")
+		# ~ else:				
+			# ~ print("WAS NEVER OPEN ")
+		# ~ try:
+			# ~ print("trying to create serial port ")		
+			# ~ self.serial_port = serial.Serial(		# serial constructor
+						# ~ port=port_name, 
+						# ~ baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
+						# ~ #baudrate = 115200,
+						# ~ #bytesize=EIGHTBITS, 
+						# ~ #parity=PARITY_NONE, 
+						# ~ #stopbits=STOPBITS_ONE, 
+						# ~ #timeout=None, 
+						# ~ timeout=5,										# we'll need a timeout just in case there's no communication
+						# ~ xonxoff=False, 
+						# ~ rtscts=False, 
+						# ~ write_timeout=None, 
+						# ~ dsrdtr=False, 
+						# ~ inter_byte_timeout=None, 
+						# ~ exclusive=None
+						# ~ )
+			# ~ # serial port will be created anyway, here we will only open
+			# ~ # add instantation of serial port to the window constructor. 
 						
-		#readed = self.serial_port.read_until(b'\n')						# this should block the loop, so needs to go to a THREAD
-		#print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!															
+			# ~ #print("Serial Port Connected")
+		# ~ except:
+			# ~ print("Serial connection has failed, try again")
 
-
-class WorkerSignals(QObject):
-	pass
+class WorkerSignals_serialport(QObject):
+	port_error_other = pyqtSignal(str)
+	
 
 class MyGraph(pg.PlotWidget):
 	def __init__(self):
@@ -287,6 +333,7 @@ class MainWindow(QMainWindow):
 	serial_port_name = None												# used to pass it to the worker dealing with the serial port.
 	serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
 	endline = b'\r\n'													# default value for endline is NL 
+	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
 	
 	
 	# constructor # 
@@ -304,6 +351,12 @@ class MainWindow(QMainWindow):
 			"Multithreading, max. Number of Threads:  " +
 			str(self.threadpool.maxThreadCount())
 		)
+		
+		# timers #																			# AT LEAST ONE TO UPDATE THE PLOT !!!
+		self.internal_tasks_timer = QTimer()												# used for nasty stuff
+		self.internal_tasks_timer.timeout.connect(self.handle_port_errors)					# regularly check if the serial error flag is set
+		self.internal_tasks_timer.start(100)
+	
 		
 		
 		# window stuff #
@@ -527,6 +580,51 @@ class MainWindow(QMainWindow):
 		print(self.serial_port_name)
 		
 		
+	def on_port_error(self,error_type):												# triggered by the serial thread, shows a window saying port is used by sb else.
+		
+		self.error_type = error_type
+		
+		logging.debug("Error on serial port opening detected: ")
+		logging.debug(self.error_type)
+		self.handle_errors_flag = True									# more global variables to fuck things up even more. 
+
+		
+	def handle_port_errors(self):										# made a trick, port_errors is a class variable (yup, dirty as fuck !!!)
+		
+		if(self.error_type == 1):										# this means already open, should never happen.
+			print("ERROR TYPE 1")										
+			d = QMessageBox.critical(
+				self,
+				"Serial port Blocked",
+				"The serial port selected is in use by other application",
+				buttons=QMessageBox.Ok
+			)		
+		if(self.error_type == 2):										# this means device not connected
+			print("ERROR TYPE 2")
+			d = QMessageBox.critical(
+				self,
+				"Serial Device is not connected",
+				"Device not connected.\n Please check your cables/connections.  ",
+				buttons=QMessageBox.Ok
+			)		
+		if(self.error_type == 3):										# this means locked by sb else. 
+			d = QMessageBox.critical(
+				self,
+				"Serial port Blocked",
+				"The serial port selected is in use by other application.  ",
+				buttons=QMessageBox.Ok
+			)
+
+			self.on_button_disconnect_click()							# resetting to the default "waiting for connect" situation
+			self.handle_errors_flag = False		
+
+		self.error_type = None											# cleaning unhnandled errors flags. 
+
+			
+							
+		
+
+
 		
 				
 		
@@ -570,9 +668,7 @@ class MainWindow(QMainWindow):
 				item = self.combo_serial_port.addItem(port_name)		# add new items 
 				
 				#b.currentTextChanged.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))
-				
-				
-				
+		
 		else:
 				self.noserials = serial_port_menu.addAction("No serial Ports detected")
 				self.noserials.setDisabled(True)
