@@ -264,6 +264,13 @@ class Worker_serialport(QRunnable):
 			if(i != -1):
 				print("SOMEONE ELSE HAS OPEN THE PORT")
 				mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+			
+			i = desc.find("OSError")
+			if(i != -1):
+				print("BLUETOOTH DEVICE NOT REACHABLE ?")	
+				mw.on_port_error(4)
+				
+				
 					
 		except:
 			print("UNKNOWN ERROR OPENING SERIAL PORT")
@@ -289,7 +296,16 @@ class MyGraph(pg.PlotWidget):
 		# do something to set the default axes range
 		self.setRange(xRange = [0,1000], yRange = [-200,200])
 		self.setLimits(xMin=0, xMax=1000000, yMin=-1000, yMax=1000)		# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
+		legend = self.addLegend()	
+		#style1 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["m"])
+		#style2 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["r"])
 	
+		legend.addItem(name = "Variable 1", item = 1)
+		legend.addItem(name = "Variable 2", item = 2)
+		legend.addItem(name = "Variable 2", item = 5)
+		legend.addItem(name = "Variable 2", item = 10)
+
+
 		
 class QPaletteButton(QPushButton):
 	def __init__(self,color):							# color as input parameter
@@ -319,10 +335,7 @@ class MainWindow(QMainWindow):
 		
 		# thread stuff # 
 		self.threadpool = QThreadPool()
-		# IS THE WORKER_SERIALPORT OBJECT ALWAYS EXISTING, OR IT DISAPPEARS AFTER EVERY END OF EXECUTION ???
-		# DO I HAVE TO INSTANTIATE IT EVERY TIME I MAKE A CONNECTION ???
-		# declaration of the worker_serialport moved to the connect_click button
-		#self.worker_serialport = Worker_serialport()					# specific worker to handle serial port communication										
+		# serial port worker created now on button press							
 		print(
 			"Multithreading, max. Number of Threads:  " +
 			str(self.threadpool.maxThreadCount())
@@ -594,7 +607,14 @@ class MainWindow(QMainWindow):
 
 			self.on_button_disconnect_click()							# resetting to the default "waiting for connect" situation
 			self.handle_errors_flag = False		
-
+		if(self.error_type == 4):										# this means device not connected
+			print("ERROR TYPE 4")
+			d = QMessageBox.critical(
+				self,
+				"Serial Device Unreachable",
+				"Serial device couldn't be reached,\n Bluetooth device too far? ",
+				buttons=QMessageBox.Ok
+			)		
 		self.error_type = None											# cleaning unhnandled errors flags. 
 
 
