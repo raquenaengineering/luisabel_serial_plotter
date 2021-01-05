@@ -155,6 +155,9 @@ class Worker_serialport(QRunnable):
 		self.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
 		while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
+			
+			# 1. get everything to a string for easy handling
+			
 			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
 			print("String as readed: ")
 			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
@@ -164,28 +167,42 @@ class Worker_serialport(QRunnable):
 			i = readed.find(mw.endline)									# index where the the endline starts.
 			readed = readed[:i]											# this removes the endline.								
 			readed = readed.decode("utf-8")								# convert to string
-			vals_text = readed.split(',')								# I may need a better way to separate the different values of the message!
-			print("vals_text")
-			print(vals_text)
-			
-			# 1. case empty string?										# THAT'S BAD...., EMPTY STRING IS USED AS RETURN VALUE FOR TIMEOUT !!!
-			if(vals_text[0]) == '':
-				print("Empty string readed, ignore it")
-			else:
-				try:
-					for val in vals_text:
-						val = float(val)									# let's use floats as default (even though they may be only integers on the other side)
-					vals_text = vals
-					print(vals)
-				except:
-					print("Conversion failed, the data not only contains numbers")
-					# mw.on_button_disconnect_click()
-			
-			
-			print("Serial after removing endline character")
 			print(readed)
+			
+			# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).
+			
+			
+			# ~ vals_text = readed.split(',')								# I may need a better way to separate the different values of the message!
+			# ~ print("vals_text")
+			# ~ print(vals_text)
+			
+			# ~ # 1. case empty string?										# THAT'S BAD...., EMPTY STRING IS USED AS RETURN VALUE FOR TIMEOUT !!!
+			# ~ if(vals_text[0]) == '':
+				# ~ print("Empty string readed, ignore it")
+			# ~ else:
+				# ~ try:
+					# ~ for val in vals_text:
+						# ~ val = float(val)							# let's use floats as default (even though they may be only integers on the other side)
+					# ~ vals_text = vals
+					# ~ print(vals)
+				# ~ except:
+					# ~ print("Conversion failed, the data not only contains numbers")
+					# ~ # mw.on_button_disconnect_click()
+		
+			# ~ print("Serial after removing endline character")
+			# ~ print(readed)
+			
+			# 4. MANAGE MESSAGES TO BE SENT VIA SERIAL.
+			if(mw.serial_message_to_send != None):
+				logging.debug("New message to be sent:")
+				logging.debug(mw.serial_message_to_send)
+				# 4.1 convert the message to bytes (default is encoded)
+				message = bytes(mw.serial_message_to_send,"utf-8")
+				self.serial_port.write(message,)						# send message
+				mw.serial_message_to_send = None						# reset message
+				logging.debug("message sent")
 
-		# 4. CLOSE THE OPEN PORT. 	
+		# 5. CLOSE THE OPEN PORT. 	
 		
 		print("serial_port.is_open:")
 		print(self.serial_port.is_open)
@@ -210,7 +227,7 @@ class Worker_serialport(QRunnable):
 			print("Wasn't open, as it should always be")
 
 
-		try:
+		try:															# try to establish serial connection 
 			self.serial_port = serial.Serial(		# serial constructor
 				port=port_name, 
 				baudrate= mw.serial_baudrate,		
@@ -247,59 +264,18 @@ class Worker_serialport(QRunnable):
 			if(i != -1):
 				print("SOMEONE ELSE HAS OPEN THE PORT")
 				mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
-				
-				
+					
 		except:
 			print("UNKNOWN ERROR OPENING SERIAL PORT")
-	
-				
 
 		else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
-			print("SERIAL PORT OPEN SUCCESFULLY!")
+			print("SERIAL CONNECTION SUCCESFUL !")
 			# here we should also add going  to the "DISCONNECT" state.
 			
-		# ~ finally:
-			# ~ print("FINALLY TENSE")
-				
 		print("serial_port.is_open:")
 		print(self.serial_port.is_open)
 		print("done: ")
-		print(self.done)	
-		
-		# ~ try:
-			# ~ self.serial_port.close()
-			# ~ print("Serial port closed succesfully ???")					# even though the port can't be closed, this message is shown. why ???
-		# ~ except:
-			# ~ print("serial port couldn't be closed")
-			
-		# ~ if(self.serial_port.is_open == True):
-			# ~ print("SOMEBODY ELSE IS USING IT")
-		# ~ else:				
-			# ~ print("WAS NEVER OPEN ")
-		# ~ try:
-			# ~ print("trying to create serial port ")		
-			# ~ self.serial_port = serial.Serial(		# serial constructor
-						# ~ port=port_name, 
-						# ~ baudrate=int(mw.combo_serial_speed.currentText()),		# require it from the combobox 
-						# ~ #baudrate = 115200,
-						# ~ #bytesize=EIGHTBITS, 
-						# ~ #parity=PARITY_NONE, 
-						# ~ #stopbits=STOPBITS_ONE, 
-						# ~ #timeout=None, 
-						# ~ timeout=5,										# we'll need a timeout just in case there's no communication
-						# ~ xonxoff=False, 
-						# ~ rtscts=False, 
-						# ~ write_timeout=None, 
-						# ~ dsrdtr=False, 
-						# ~ inter_byte_timeout=None, 
-						# ~ exclusive=None
-						# ~ )
-			# ~ # serial port will be created anyway, here we will only open
-			# ~ # add instantation of serial port to the window constructor. 
-						
-			# ~ #print("Serial Port Connected")
-		# ~ except:
-			# ~ print("Serial connection has failed, try again")
+		print(self.done)			
 
 class WorkerSignals_serialport(QObject):
 	port_error_other = pyqtSignal(str)
@@ -334,7 +310,7 @@ class MainWindow(QMainWindow):
 	serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
 	endline = b'\r\n'													# default value for endline is NL 
 	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
-	
+	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
 	
 	# constructor # 
 	def __init__(self):
@@ -427,7 +403,9 @@ class MainWindow(QMainWindow):
 		# text box command #
 		self.textbox_send_command = QLineEdit()
 		self.textbox_send_command.returnPressed.connect(self.send_serial)			# sends command via serial port
+		self.textbox_send_command.setEnabled(False)									# not enabled until serial port is connected. 
 		self.layoutH1.addWidget(self.textbox_send_command)
+		# send button # 
 		self.b_send = QPushButton("Send")											
 		self.b_send.clicked.connect(self.send_serial)								# same action as enter in textbox
 		self.layoutH1.addWidget(self.b_send)
@@ -458,13 +436,15 @@ class MainWindow(QMainWindow):
 		
 		# actions #		
 		
-	def send_serial(self):
+	def send_serial(self):												# do I need another thread for this ???
 		print("Send Serial")
-		self.textbox_send_command.setText("")
-		#2.delete textbox content. 
-		#self.centralWidget().setText("BOOM!")
-		
+		command = self.textbox_send_command.text()						# get what's on the textbox. 
+		print(command)
+		self.textbox_send_command.setText("")		
 		# here the serial send command # 
+		self.serial_message_to_send = command							# this should have effect on the serial_thread
+		print("serial_message_to_send")
+		print(self.serial_message_to_send)
 	
 	# other methods # 
 		
@@ -550,6 +530,7 @@ class MainWindow(QMainWindow):
 		self.combo_serial_port.setEnabled(False)
 		self.combo_serial_speed.setEnabled(False)
 		self.combo_endline_params.setEnabled(False)
+		self.textbox_send_command.setEnabled(True)
 		self.worker_serialport = Worker_serialport()					# creates a serialport worker every time we push the button, PLEASE NOTE IT ALSO NEEDS TO BE DESTROYED!!!
 		self.threadpool.start(self.worker_serialport)					
 		
@@ -560,12 +541,8 @@ class MainWindow(QMainWindow):
 		self.combo_serial_port.setEnabled(True)
 		self.combo_serial_speed.setEnabled(True)
 		self.combo_endline_params.setEnabled(True)
+		self.textbox_send_command.setEnabled(False)
 		self.worker_serialport.done = True								# finishes the thread execution
-		
-		
-		# 1. Close serial port, but: how do I close the serial port of the thread from this button ?
-		# 2. Kill thread so we can start it new ? OR prevent thread of doing anything and keep it alive ???
-		
 					
 	def on_port_select(self,port_name):				# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
@@ -620,15 +597,6 @@ class MainWindow(QMainWindow):
 
 		self.error_type = None											# cleaning unhnandled errors flags. 
 
-			
-							
-		
-
-
-		
-				
-		
-		
 
 	# creates a full palete with as many buttons as colors as defined in COLORS
 	def add_palette_buttons(self,layout):
