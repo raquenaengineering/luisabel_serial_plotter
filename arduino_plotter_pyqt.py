@@ -6,8 +6,15 @@ import random										# random numbers
 import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
 
+
+import numpy as np 									# required to handle multidimensional arrays/matrices
+
 import logging
-logging.basicConfig(level=logging.DEBUG)		# enable debug messages
+logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+
+# custom packages #
+
+import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
 
 
 # qt imports #
@@ -355,6 +362,8 @@ class MyGraph(pg.PlotWidget):
 		for val in self.dataset:
 			data_buffer.append(val[0])
 			
+		#data_buffer = self.dataset[:][0] # numpy
+			
 		print(data_buffer)
 		# update all plots
 		c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')		
@@ -365,14 +374,14 @@ class MyGraph(pg.PlotWidget):
 		
 		
 
+# THIS MAY NOT BE NEEDED ##############
 
-		
-class QPaletteButton(QPushButton):
-	def __init__(self,color):							# color as input parameter
-		super().__init__()
-		self.setFixedSize(QSize(24,24))
-		self.color = color
-		self.setStyleSheet("background-color: " + color)				# the book uses c-ish like syntax. 
+# ~ class QPaletteButton(QPushButton):
+	# ~ def __init__(self,color):							# color as input parameter
+		# ~ super().__init__()
+		# ~ self.setFixedSize(QSize(24,24))
+		# ~ self.color = color
+		# ~ self.setStyleSheet("background-color: " + color)				# the book uses c-ish like syntax. 
 		
 		
 # MAIN WINDOW #			
@@ -407,6 +416,8 @@ class MainWindow(QMainWindow):
 		self.internal_tasks_timer.start(100)
 	
 		
+		self.palette = pyqt_custom_palettes.dark_palette()
+		self.setPalette(self.palette)
 		
 		# window stuff #
 		self.setWindowTitle("Arduino Plotter PyQt")						# relevant title 
@@ -424,9 +435,13 @@ class MainWindow(QMainWindow):
 
 		# Preferences #
 		self.preferences_menu = menu.addMenu("&Preferences")
+		# theme #
 		self.theme_submenu = self.preferences_menu.addMenu("Theme")
 		self.dark_theme_option = self.theme_submenu.addAction("Dark")
+		self.dark_theme_option.triggered.connect(self.set_dark_theme)
 		self.light_theme_option = self.theme_submenu.addAction("Light")
+		self.light_theme_option.triggered.connect(self.set_light_theme)
+
 
 
 
@@ -694,6 +709,14 @@ class MainWindow(QMainWindow):
 			layout.addWidget(b)
 
 
+	def set_dark_theme(self):
+		self.palette = pyqt_custom_palettes.dark_palette()
+		self.setPalette(self.palette)
+		
+	def set_light_theme(self):
+		self.palette = pyqt_custom_palettes.re_palette()
+		self.setPalette(self.palette)
+
 	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
 		# here we need to add an entry for each serial port avaiable at the computer
 		# 1. How to get the list of available serial ports ?
@@ -731,5 +754,6 @@ class MainWindow(QMainWindow):
 
 		
 app = QApplication(sys.argv)
+app.setStyle("Fusion")													# required to use it here
 mw = MainWindow()
 app.exec_()
