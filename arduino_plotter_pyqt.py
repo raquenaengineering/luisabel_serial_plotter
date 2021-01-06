@@ -1,6 +1,7 @@
 # standard imports #
 import sys											# deal with OS, open files and so
 import time 										# delays, and time measurement ?
+import random										# random numbers
 
 import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
@@ -133,6 +134,7 @@ class Worker_serialport(QRunnable):
 	# class variables #
 	
 	done = False														# if done, thread should finish.
+	timeouts = 0														# counts number of timeouts the serial port has made until the moment.
 	
 	
 	# ~ ## constructor ##													# how does it work with the constructor and the run method ??
@@ -167,9 +169,37 @@ class Worker_serialport(QRunnable):
 			i = readed.find(mw.endline)									# index where the the endline starts.
 			readed = readed[:i]											# this removes the endline.								
 			readed = readed.decode("utf-8")								# convert to string
+			print("Readed:")
 			print(readed)
+			#logging.debug(readed)
 			
 			# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).
+		
+			vals = readed.replace(' ',',')								# replace empty spaces for commas. 
+			vals = vals.split(',')										# arduino serial plotter splits with both characters.
+			
+			print("Vals: ")
+			print(vals)
+			
+			if(vals[0] == ''):
+				print("Timeout")
+			
+			else:	
+				try:
+					valsf = []
+					for val in vals:
+						valsf.append(float(val))
+					print("valsf")
+					print(valsf)
+				except:
+					print("It contains also text");
+					# add to a captions vector
+					text_vals = vals
+					
+				mw.plot_frame.dataset.append(valsf)
+				#print(mw.plot_frame.dataset)
+			
+			
 			
 			
 			# ~ vals_text = readed.split(',')								# I may need a better way to separate the different values of the message!
@@ -289,6 +319,9 @@ class WorkerSignals_serialport(QObject):
 	
 
 class MyGraph(pg.PlotWidget):
+	
+	dataset = []														# here we'll have the information to print (edited by thread)
+	
 	def __init__(self):
 		super().__init__()			
 		self.setBackground([200,200,200])								# changing default background color.
@@ -296,14 +329,41 @@ class MyGraph(pg.PlotWidget):
 		# do something to set the default axes range
 		self.setRange(xRange = [0,1000], yRange = [-200,200])
 		self.setLimits(xMin=0, xMax=1000000, yMin=-1000, yMax=1000)		# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
-		legend = self.addLegend()	
+		legend = self.addLegend()
+		
+		self.plot_timer = QTimer()										# used to update the 
+		self.plot_timer.timeout.connect(self.on_plot_timer)				# regularly check if the serial error flag is set
+		self.plot_timer.start(100)							# will also control the refresh rate.	
+		
+		
+		# ~ c1 = self.plot([1,3,2,4], pen='y', name='Yellow Plot')
+		# ~ c2 = self.plot([2,1,4,3], pen='b', fillLevel=0, fillBrush=(255,255,255,30), name='Blue Plot')
+		# ~ c3 = self.addLine(y=4, pen='y')
+		
 		#style1 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["m"])
 		#style2 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["r"])
 	
-		legend.addItem(name = "Variable 1", item = 1)
-		legend.addItem(name = "Variable 2", item = 2)
-		legend.addItem(name = "Variable 2", item = 5)
-		legend.addItem(name = "Variable 2", item = 10)
+		# ~ legend = self.addLegend()	
+	
+		# ~ legend.addItem(name = "Variable 1", item = 1)
+		# ~ legend.addItem(name = "Variable 2", item = 2)
+		# ~ legend.addItem(name = "Variable 2", item = 5)
+		# ~ legend.addItem(name = "Variable 2", item = 10)
+		
+	def on_plot_timer(self):
+		data_buffer = []				
+		for val in self.dataset:
+			data_buffer.append(val[0])
+			
+		print(data_buffer)
+		# update all plots
+		c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')		
+		var1 = self.plot(data_buffer, pen = 'r')
+
+		#self.plot(data_buffer, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)))
+		
+		
+		
 
 
 		
@@ -361,6 +421,14 @@ class MainWindow(QMainWindow):
 		#self.update_serial_ports()										# needs to be moved after the declaration of update_serial_ports!!!	
 		self.refresh_menu = self.file_menu.addAction("Refresh")
 		self.refresh_menu.triggered.connect(self.update_serial_ports)
+
+		# Preferences #
+		self.preferences_menu = menu.addMenu("&Preferences")
+		self.theme_submenu = self.preferences_menu.addMenu("Theme")
+		self.dark_theme_option = self.theme_submenu.addAction("Dark")
+		self.light_theme_option = self.theme_submenu.addAction("Light")
+
+
 
 		# about #
 		help_menu = menu.addMenu("&Help")
