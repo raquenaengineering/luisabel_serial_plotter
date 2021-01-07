@@ -11,6 +11,7 @@ import numpy as np 									# required to handle multidimensional arrays/matrice
 
 import logging
 #logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+logging.basicConfig(level = logging.WARNING)
 
 # custom packages #
 
@@ -89,6 +90,27 @@ COLORS = [
 "#81588d",
 "#bcb0c2",
 "#ffffff",
+
+"#000000",
+"#141923",
+"#414168",
+"#3a7fa7",
+"#35e3e3",
+"#8fd970",
+"#5ebb49",
+"#458352",
+"#dcd37b",
+"#fffee5",
+"#ffd035",
+"#cc9245",
+"#a15c3e",
+"#a42f3b",
+"#f45b7a",
+"#c24998",
+"#81588d",
+"#bcb0c2",
+"#ffffff",
+
 ]
 
 # ~ SERIAL_SPEEDS = [
@@ -145,8 +167,7 @@ class Worker_serialport(QRunnable):
 	
 	done = False														# if done, thread should finish.
 	timeouts = 0														# counts number of timeouts the serial port has made until the moment.
-	
-	
+
 	# ~ ## constructor ##													# how does it work with the constructor and the run method ??
 	# ~ def __init__(self):														
 		# ~ self.signals = WorkerSignals_serialport()						# signals triggered by the thread, to communicate with the MAIN WINDOW
@@ -311,25 +332,34 @@ class WorkerSignals_serialport(QObject):
 
 class MyGraph(pg.PlotWidget):
 	
-	dataset = []														# here we'll have the information to print (edited by thread)
+	
+	max_points = 1000													# maximum points per plot
+	max_plots = 16														# maximum number of plots
+	first = True														# first iteration only creating the plots
+	
+	dataset = []							
+	plot_refs = []
+													
 	dataset_changed = False
 
 	#dataset = np.array()
 	
 	def __init__(self):
-		super().__init__()			
+		super().__init__()		
+		pg.setConfigOptions(antialias=True)							# antialiasing for nicer view. 
 		#self.setBackground([200,200,200])								# changing default background color.
-		self.setBackground([70,70,70])								# changing default background color.
+		self.setBackground([70,70,70])									# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
 		# do something to set the default axes range
 		#self.setRange(xRange = [0,1000], yRange = [-200,200])
 		self.setRange(xRange = [0,50], yRange = [0,256])
-		self.setLimits(xMin=0, xMax=1000000, yMin=-1000, yMax=1000)		# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
+		self.setLimits(xMin=-10, xMax=1000000, yMin=-1000, yMax=1000)		# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
+		self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
 		legend = self.addLegend()
 		
 		self.plot_timer = QTimer()										# used to update the 
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# regularly check if the serial error flag is set
-		self.plot_timer.start(100)							# will also control the refresh rate.	
+		self.plot_timer.start(10)										# will also control the refresh rate.	
 		
 		
 		# ~ c1 = self.plot([1,3,2,4], pen='y', name='Yellow Plot')
@@ -339,19 +369,42 @@ class MyGraph(pg.PlotWidget):
 		#style1 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["m"])
 		# ~ legend.addItem(name = "Variable 1", item = 1)
 
-		
+
+	def add_plots(self):												# optionally, make possible single or multiple plots
+		# FIRST: CREATE THE PLOTS 
+			# bring this to the graph creator 
+		print("Add graph.plots_method called")
+			
+		#for dataplot in self.dataset:
+		for i in range (len(self.dataset)):
+			print("val of i:" + str(i))
+			# HOW TO REFERENCE THE PLOTS CREATED ON THIS WAY ??? #
+			# plot = self.plot(self.dataset[i], pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name ="Plot" + str(i))
+			# p = self.plot(self.dataset[i], pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
+			p = self.plot(self.dataset[i], pen = (COLORS[i]),name ="Plot" + str(i))
+
+			self.plot_refs.append(p)
+
 	def on_plot_timer(self):
 
 		# MOVE TO NUMPY N-DIMENSIONAL ARRAYS #
 
 		# update all plots
 		#c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')	
-		
+			
+		# SECOND: UPDATE THE PLOTS:
+			
 		if(self.dataset_changed == True):											# redraw only if there are changes on the dataset
+			if self.first == True:
+				self.add_plots()
+				self.first = False
 			self.dataset_changed = False
-			for dataplot in self.dataset:
-				#self.plot(dataplot, pen = 'r')
-				self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name = "17")
+			for i in range(len(self.dataset)):
+				self.plot_refs[i].setData(self.dataset[i]) 
+			# ~ for dataplot in self.dataset:
+				# ~ #self.plot(dataplot, pen = 'r')
+				# ~ #self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name = "17")
+				# ~ self.setData
 			
 		
 # MAIN WINDOW #			
@@ -397,12 +450,15 @@ class MainWindow(QMainWindow):
 		# Other shortcuts #
 		self.sc_f = QShortcut(QKeySequence('f'), self)										# f
 		self.sc_f.activated.connect(self.full_screen)
-		self.sc_c = QShortcut(QKeySequence('c'), self)										# c		// c should disable itself, until d pressed.
-		self.sc_c.activated.connect(self.on_button_connect_click)
-		self.sc_d = QShortcut(QKeySequence('d'), self)										# d
-		self.sc_d.activated.connect(self.on_button_disconnect_click)	
-		
+		# ~ self.sc_c = QShortcut(QKeySequence('c'), self)										# c		// c should disable itself, until d pressed.
+		# ~ self.sc_c.activated.connect(self.on_button_connect_click)
+		# ~ self.sc_d = QShortcut(QKeySequence('d'), self)										# d
+		# ~ self.sc_d.activated.connect(self.on_button_disconnect_click)	
+		self.sc_u = QShortcut(QKeySequence('u'), self)										# u
+		self.sc_u.activated.connect(self.update_serial_ports)	
 		self.palette = pyqt_custom_palettes.dark_palette()
+		
+		# theme(palette) #
 		self.setPalette(self.palette)
 		
 		# window stuff #
@@ -755,6 +811,7 @@ class MainWindow(QMainWindow):
 	
 	def on_sc_f10(self):
 		logging.debug("Shortcut F10 pushed")
+				
 		
 	
 
