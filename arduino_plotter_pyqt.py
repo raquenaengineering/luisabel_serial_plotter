@@ -32,6 +32,8 @@ from PyQt5.QtWidgets import (
 	QStatusBar,
 	QDialog,
 	QMessageBox,														# Dialog with extended functionality. 
+	QShortcut,
+
 
 	QSystemTrayIcon,
 	QTextEdit,
@@ -41,7 +43,8 @@ from PyQt5.QtWidgets import (
 )
 
 from PyQt5.QtGui import (
-	QIcon
+	QIcon,
+	QKeySequence
 )
 
 from PyQt5.QtCore import(
@@ -383,10 +386,12 @@ class MyGraph(pg.PlotWidget):
 		# MOVE TO NUMPY N-DIMENSIONAL ARRAYS #
 
 		# update all plots
-		#c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')		
+		#c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')	
+		
+			
 		for dataplot in self.dataset:
 			#self.plot(dataplot, pen = 'r')
-			self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)))
+			self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name = "17")
 		
 		
 		
@@ -413,6 +418,8 @@ class MainWindow(QMainWindow):
 	endline = b'\r\n'													# default value for endline is NL 
 	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
+	full_screen_flag = False
+	
 	
 	# constructor # 
 	def __init__(self):
@@ -431,6 +438,12 @@ class MainWindow(QMainWindow):
 		self.internal_tasks_timer = QTimer()												# used for nasty stuff
 		self.internal_tasks_timer.timeout.connect(self.handle_port_errors)					# regularly check if the serial error flag is set
 		self.internal_tasks_timer.start(100)
+
+		# shortcuts #
+		
+		#self.mySc = QShortcut(QKeySequence(-103), self)										# F11
+		self.mySc = QShortcut(QKeySequence('f'), self)										# F11
+		self.mySc.activated.connect(self.full_screen)
 	
 		
 		self.palette = pyqt_custom_palettes.dark_palette()
@@ -548,8 +561,18 @@ class MainWindow(QMainWindow):
 		# self.serial_baudrate = ...
 		# self.endline = ...
 		
+
+	# on close #
 		
-		# actions #		
+	def closeEvent(self, event):
+
+		print("CLOSING AND CLEANING UP:")
+		super().close()
+		
+		
+		#event.ignore()													# extremely useful to ignore the close event !
+	
+	# actions #		
 		
 	def send_serial(self):												# do I need another thread for this ???
 		print("Send Serial")
@@ -775,6 +798,19 @@ class MainWindow(QMainWindow):
 		else:
 				self.noserials = serial_port_menu.addAction("No serial Ports detected")
 				self.noserials.setDisabled(True)
+
+	def full_screen(self):												# it should be able to be detected from window class !!!
+		if self.full_screen_flag == False:								
+			self.showFullScreen()
+			self.full_screen_flag = True
+			logging.debug("Full Screen ENABLED")
+		else:
+			self.showNormal()
+			self.full_screen_flag = False
+			logging.debug("Full Screen DISABLED")
+	
+
+
 
 		
 app = QApplication(sys.argv)
