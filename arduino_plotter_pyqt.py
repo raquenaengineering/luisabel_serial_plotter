@@ -186,25 +186,43 @@ class Worker_serialport(QRunnable):
 			vals = vals.split(',')										# arduino serial plotter splits with both characters.
 			
 			print("Vals: ")
-			print(vals)
-			
+			#print(vals)
+			valsf = []
+
 			if(vals[0] == ''):
 				print("Timeout")
-			
 			else:	
 				try:
-					valsf = []
 					for val in vals:
 						valsf.append(float(val))
-					print("valsf")
-					print(valsf)
+					# ~ print("valsf")
+					# ~ print(valsf)
 				except:
 					print("It contains also text");
 					# add to a captions vector
 					text_vals = vals
+				
+			
+			if(mw.plot_frame.dataset == []):							# if the dataset is empty (a dataset reset function may  be useful)
+				for val in valsf:
+					mw.plot_frame.dataset.append([])
+			else:														# if already data, we append to each sub array. 
+				for i in range(0,len(valsf)):							# this may not be the greatest option.
+					mw.plot_frame.dataset[i].append(valsf[i])
 					
-				mw.plot_frame.dataset.append(valsf)
-				#print(mw.plot_frame.dataset)
+				
+			# ~ for datarow in mw.plot_frame.dataset:
+				# ~ print(datarow)
+			
+			
+					
+				# ~ for val in valsf:
+					# ~ mw.plot_frame.dataset
+					
+				# ~ for val in valsf:
+					# ~ mw.plot_frame.dataset.append(val)
+				# ~ #mw.plot_frame.dataset.append(valsf)
+				# ~ #print(mw.plot_frame.dataset)
 			
 			
 			
@@ -328,13 +346,16 @@ class WorkerSignals_serialport(QObject):
 class MyGraph(pg.PlotWidget):
 	
 	dataset = []														# here we'll have the information to print (edited by thread)
+	#dataset = np.array()
 	
 	def __init__(self):
 		super().__init__()			
-		self.setBackground([200,200,200])								# changing default background color.
+		#self.setBackground([200,200,200])								# changing default background color.
+		self.setBackground([70,70,70])								# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
 		# do something to set the default axes range
-		self.setRange(xRange = [0,1000], yRange = [-200,200])
+		#self.setRange(xRange = [0,1000], yRange = [-200,200])
+		self.setRange(xRange = [0,50], yRange = [0,256])
 		self.setLimits(xMin=0, xMax=1000000, yMin=-1000, yMax=1000)		# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		legend = self.addLegend()
 		
@@ -358,18 +379,14 @@ class MyGraph(pg.PlotWidget):
 		# ~ legend.addItem(name = "Variable 2", item = 10)
 		
 	def on_plot_timer(self):
-		data_buffer = []				
-		for val in self.dataset:
-			data_buffer.append(val[0])
-			
-		#data_buffer = self.dataset[:][0] # numpy
-			
-		print(data_buffer)
-		# update all plots
-		c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')		
-		var1 = self.plot(data_buffer, pen = 'r')
 
-		#self.plot(data_buffer, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)))
+		# MOVE TO NUMPY N-DIMENSIONAL ARRAYS #
+
+		# update all plots
+		#c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')		
+		for dataplot in self.dataset:
+			#self.plot(dataplot, pen = 'r')
+			self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)))
 		
 		
 		
@@ -441,6 +458,8 @@ class MainWindow(QMainWindow):
 		self.dark_theme_option.triggered.connect(self.set_dark_theme)
 		self.light_theme_option = self.theme_submenu.addAction("Light")
 		self.light_theme_option.triggered.connect(self.set_light_theme)
+		self.re_theme_option = self.theme_submenu.addAction("Raquena")
+		self.re_theme_option.triggered.connect(self.set_re_theme)
 
 
 
@@ -709,11 +728,16 @@ class MainWindow(QMainWindow):
 			layout.addWidget(b)
 
 
+	# check all themes and use lambda functions may be an option to use more themes #
 	def set_dark_theme(self):
 		self.palette = pyqt_custom_palettes.dark_palette()
 		self.setPalette(self.palette)
 		
 	def set_light_theme(self):
+		self.palette = pyqt_custom_palettes.light_palette()
+		self.setPalette(self.palette)
+
+	def set_re_theme(self):
 		self.palette = pyqt_custom_palettes.re_palette()
 		self.setPalette(self.palette)
 

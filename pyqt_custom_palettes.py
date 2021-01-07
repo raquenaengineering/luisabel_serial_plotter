@@ -44,6 +44,28 @@ class dark_palette(QPalette):
 		self.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127)) 
 
 
+class light_palette(QPalette):
+
+	def __init__(self):
+		super().__init__()
+	
+		# changing all color palette parameters inside the class #
+		self.setColor(QPalette.Window, QColor(250,250,250))								# quite clear grey
+		self.setColor(QPalette.WindowText, QColor(42,42,42))							# window text			(255,150,100) also looks good
+		self.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127,127,127))		# what does this do ???
+		self.setColor(QPalette.Button, QColor(200,200,200))								# not working !!!
+		self.setColor(QPalette.ButtonText, Qt.black)									# works fine
+
+		self.setColor(QPalette.Base, QColor(200,200,200))									# base color =???
+		self.setColor(QPalette.AlternateBase, QColor(42,42,42))						
+		self.setColor(QPalette.ToolTipBase, QColor(42,42,42))						
+		self.setColor(QPalette.ToolTipText, Qt.white)
+		self.setColor(QPalette.Text, Qt.white)											# why white ??
+		self.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
+		self.setColor(QPalette.Dark, QColor(35, 35, 35))
+
+
+
 class custom_palette(QPalette):
 	def __init__(self):
 		super().__init__()
@@ -61,8 +83,7 @@ class custom_palette(QPalette):
 		# ~ darkPalette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
 		# ~ darkPalette.setColor(QPalette.Dark, QColor(35, 35, 35))
 		
-		# add custom color for the pyqtgraphs:
-		
+		# add custom color for the pyqtgrap
 		
 
 class re_palette(QPalette):														# palette for Raquena Engineering Apps
