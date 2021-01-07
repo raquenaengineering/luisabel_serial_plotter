@@ -10,7 +10,7 @@ import serial.tools.list_ports						# to list already existing ports
 import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
-logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+#logging.basicConfig(level=logging.DEBUG)			# enable debug messages
 
 # custom packages #
 
@@ -171,25 +171,24 @@ class Worker_serialport(QRunnable):
 			# 1. get everything to a string for easy handling
 			
 			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
-			print("String as readed: ")
-			print(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
-			print("Endline: ")
-			print(mw.endline)
-			print("Readed.endline found at character: ")
+			logging.debug("String as readed: ")
+			logging.debug(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
+			logging.debug("Endline: ")
+			logging.debug(mw.endline)
+			logging.debug("Readed.endline found at character: ")
 			i = readed.find(mw.endline)									# index where the the endline starts.
 			readed = readed[:i]											# this removes the endline.								
 			readed = readed.decode("utf-8")								# convert to string
-			print("Readed:")
-			print(readed)
-			#logging.debug(readed)
+			logging.debug("Readed:")
+			logging.debug(readed)
 			
 			# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).
 		
 			vals = readed.replace(' ',',')								# replace empty spaces for commas. 
 			vals = vals.split(',')										# arduino serial plotter splits with both characters.
 			
-			print("Vals: ")
-			#print(vals)
+			logging.debug("Vals: ")
+			logging.debug(vals)
 			valsf = []
 
 			if(vals[0] == ''):
@@ -201,7 +200,7 @@ class Worker_serialport(QRunnable):
 					# ~ print("valsf")
 					# ~ print(valsf)
 				except:
-					print("It contains also text");
+					logging.debug("It contains also text");
 					# add to a captions vector
 					text_vals = vals
 				
@@ -212,43 +211,7 @@ class Worker_serialport(QRunnable):
 			else:														# if already data, we append to each sub array. 
 				for i in range(0,len(valsf)):							# this may not be the greatest option.
 					mw.plot_frame.dataset[i].append(valsf[i])
-					
-				
-			# ~ for datarow in mw.plot_frame.dataset:
-				# ~ print(datarow)
-			
-			
-					
-				# ~ for val in valsf:
-					# ~ mw.plot_frame.dataset
-					
-				# ~ for val in valsf:
-					# ~ mw.plot_frame.dataset.append(val)
-				# ~ #mw.plot_frame.dataset.append(valsf)
-				# ~ #print(mw.plot_frame.dataset)
-			
-			
-			
-			
-			# ~ vals_text = readed.split(',')								# I may need a better way to separate the different values of the message!
-			# ~ print("vals_text")
-			# ~ print(vals_text)
-			
-			# ~ # 1. case empty string?										# THAT'S BAD...., EMPTY STRING IS USED AS RETURN VALUE FOR TIMEOUT !!!
-			# ~ if(vals_text[0]) == '':
-				# ~ print("Empty string readed, ignore it")
-			# ~ else:
-				# ~ try:
-					# ~ for val in vals_text:
-						# ~ val = float(val)							# let's use floats as default (even though they may be only integers on the other side)
-					# ~ vals_text = vals
-					# ~ print(vals)
-				# ~ except:
-					# ~ print("Conversion failed, the data not only contains numbers")
-					# ~ # mw.on_button_disconnect_click()
-		
-			# ~ print("Serial after removing endline character")
-			# ~ print(readed)
+				mw.plot_frame.dataset_changed = True					# we've changed the dataset, so we update the plot.
 			
 			# 4. MANAGE MESSAGES TO BE SENT VIA SERIAL.
 			if(mw.serial_message_to_send != None):
@@ -262,27 +225,27 @@ class Worker_serialport(QRunnable):
 
 		# 5. CLOSE THE OPEN PORT. 	
 		
-		print("serial_port.is_open:")
-		print(self.serial_port.is_open)
-		print("done")
-		print(self.done)		
+		logging.debug("serial_port.is_open:")
+		logging.debug(self.serial_port.is_open)
+		logging.debug("done")
+		logging.debug(self.done)		
 			
 		mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
-		print("Thread Complete")
-		print(SEPARATOR)
+		logging.debug("Thread Complete")
+		logging.debug(SEPARATOR)
 		
 	def serial_connect(self, port_name):
-		print("serial_connect method called")
-		print(port_name)
-		print("port name " + port_name)
+		logging.debug("serial_connect method called")
+		logging.debug(port_name)
+		logging.debug("port name " + port_name)
 
 		try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
 			self.serial_port.close()
-			print("Serial port closed")	
-			print("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
+			logging.debug("Serial port closed")	
+			logging.debug("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
 		except:
-			print("serial port couldn't be closed")
-			print("Wasn't open, as it should always be")
+			logging.debug("serial port couldn't be closed")
+			logging.debug("Wasn't open, as it should always be")
 
 
 		try:															# try to establish serial connection 
@@ -304,43 +267,43 @@ class Worker_serialport(QRunnable):
 				)
 			
 		except Exception as e:								# both port open, and somebody else blocking the port are IO errors.
-			print("ERROR OPENING SERIAL PORT")
+			logging.debug("ERROR OPENING SERIAL PORT")
 			desc = str(e)
-			print(type(e))
-			print(desc)
+			logging.debug(type(e))
+			logging.debug(desc)
 			i = desc.find("Port is already open.")
 			if(i != -1):
 				print("PORT ALREADY OPEN BY THIS APPLICATION")
-			print(i)
+			logging.debug(i)
 			
 			i = desc.find("FileNotFoundError")
 			if(i != -1):
-				print("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
+				logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
 				mw.on_port_error(2)										# 
 					
 			i = desc.find("PermissionError")
 			if(i != -1):
-				print("SOMEONE ELSE HAS OPEN THE PORT")
+				logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
 				mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
 			
 			i = desc.find("OSError")
 			if(i != -1):
-				print("BLUETOOTH DEVICE NOT REACHABLE ?")	
+				logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")	
 				mw.on_port_error(4)
 				
 				
 					
 		except:
-			print("UNKNOWN ERROR OPENING SERIAL PORT")
+			logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
 
 		else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
-			print("SERIAL CONNECTION SUCCESFUL !")
+			logging.debug("SERIAL CONNECTION SUCCESFUL !")
 			# here we should also add going  to the "DISCONNECT" state.
 			
-		print("serial_port.is_open:")
-		print(self.serial_port.is_open)
-		print("done: ")
-		print(self.done)			
+		logging.debug("serial_port.is_open:")
+		logging.debug(self.serial_port.is_open)
+		logging.debug("done: ")
+		logging.debug(self.done)			
 
 class WorkerSignals_serialport(QObject):
 	port_error_other = pyqtSignal(str)
@@ -349,6 +312,8 @@ class WorkerSignals_serialport(QObject):
 class MyGraph(pg.PlotWidget):
 	
 	dataset = []														# here we'll have the information to print (edited by thread)
+	dataset_changed = False
+
 	#dataset = np.array()
 	
 	def __init__(self):
@@ -372,14 +337,8 @@ class MyGraph(pg.PlotWidget):
 		# ~ c3 = self.addLine(y=4, pen='y')
 		
 		#style1 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["m"])
-		#style2 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["r"])
-	
-		# ~ legend = self.addLegend()	
-	
 		# ~ legend.addItem(name = "Variable 1", item = 1)
-		# ~ legend.addItem(name = "Variable 2", item = 2)
-		# ~ legend.addItem(name = "Variable 2", item = 5)
-		# ~ legend.addItem(name = "Variable 2", item = 10)
+
 		
 	def on_plot_timer(self):
 
@@ -388,23 +347,12 @@ class MyGraph(pg.PlotWidget):
 		# update all plots
 		#c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')	
 		
+		if(self.dataset_changed == True):											# redraw only if there are changes on the dataset
+			self.dataset_changed = False
+			for dataplot in self.dataset:
+				#self.plot(dataplot, pen = 'r')
+				self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name = "17")
 			
-		for dataplot in self.dataset:
-			#self.plot(dataplot, pen = 'r')
-			self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name = "17")
-		
-		
-		
-
-# THIS MAY NOT BE NEEDED ##############
-
-# ~ class QPaletteButton(QPushButton):
-	# ~ def __init__(self,color):							# color as input parameter
-		# ~ super().__init__()
-		# ~ self.setFixedSize(QSize(24,24))
-		# ~ self.color = color
-		# ~ self.setStyleSheet("background-color: " + color)				# the book uses c-ish like syntax. 
-		
 		
 # MAIN WINDOW #			
 
@@ -441,10 +389,18 @@ class MainWindow(QMainWindow):
 
 		# shortcuts #
 		
-		#self.mySc = QShortcut(QKeySequence(-103), self)										# F11
-		self.mySc = QShortcut(QKeySequence('f'), self)										# F11
-		self.mySc.activated.connect(self.full_screen)
-	
+		# f keys shortcuts #
+		self.sc_f11 = QShortcut(QKeySequence("F11"), self)									# F11
+		self.sc_f11.activated.connect(self.full_screen)
+		self.sc_f10 = QShortcut(QKeySequence("F10"), self)									# F10
+		self.sc_f10.activated.connect(self.on_sc_f10)
+		# Other shortcuts #
+		self.sc_f = QShortcut(QKeySequence('f'), self)										# f
+		self.sc_f.activated.connect(self.full_screen)
+		self.sc_c = QShortcut(QKeySequence('c'), self)										# c		// c should disable itself, until d pressed.
+		self.sc_c.activated.connect(self.on_button_connect_click)
+		self.sc_d = QShortcut(QKeySequence('d'), self)										# d
+		self.sc_d.activated.connect(self.on_button_disconnect_click)	
 		
 		self.palette = pyqt_custom_palettes.dark_palette()
 		self.setPalette(self.palette)
@@ -543,9 +499,6 @@ class MainWindow(QMainWindow):
 		self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
 		self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
 		self.layoutH1.addWidget(self.combo_endline_params)
-		# ~ self.layoutH2 = QHBoxLayout()
-		# ~ self.layoutV1.addLayout(self.layoutH2)
-		# ~ self.add_palette_buttons(self.layoutH2)
 		
 		# status bar #
 		self.status_bar = QStatusBar()
@@ -575,14 +528,13 @@ class MainWindow(QMainWindow):
 	# actions #		
 		
 	def send_serial(self):												# do I need another thread for this ???
-		print("Send Serial")
+		logging.debug("Send Serial")
 		command = self.textbox_send_command.text()						# get what's on the textbox. 
-		print(command)
 		self.textbox_send_command.setText("")		
 		# here the serial send command # 
 		self.serial_message_to_send = command							# this should have effect on the serial_thread
-		print("serial_message_to_send")
-		print(self.serial_message_to_send)
+		logging.debug("serial_message_to_send")
+		logging.debug(self.serial_message_to_send)
 	
 	# other methods # 
 		
@@ -638,16 +590,17 @@ class MainWindow(QMainWindow):
 					self.serial_ports.remove(port)						# removes by matching description
 		
 	def change_serial_speed(self):										# this function is useless ATM, as the value is asked when serial open again.
-		print("change_serial_speed method called")
+		logging.debug("change_serial_speed method called")
 		text_baud = self.combo_serial_speed.currentText()
 		baudrate = int(text_baud)
 		#self.serial_port.baudrate.set(baudrate)	
 		self.serial_baudrate = baudrate			
-		print(text_baud)
+		logging.debug(text_baud)
 		
 	def change_endline_style(self):										# this and previous method are the same, use lambdas?
+		logging.debug("change_endline_speed method called")
 		endline_style = self.combo_endline_params.currentText()
-		print(endline_style)
+		logging.debug(endline_style)
 		# FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
 		if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
 			self.endline = b""
@@ -658,11 +611,11 @@ class MainWindow(QMainWindow):
 		elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
 			self.endline = b"\r\n"	
 			
-		print(self.endline)	
+		logging.debug(self.endline)	
 		
 		
 	def on_button_connect_click(self):									# this button changes text to disconnect when a connection is succesful.
-		print("Connect Button Clicked")									# how to determine a connection was succesful ???
+		logging.debug("Connect Button Clicked")									# how to determine a connection was succesful ???
 		self.button_serial_connect.setEnabled(False)
 		self.button_serial_disconnect.setEnabled(True)
 		self.combo_serial_port.setEnabled(False)
@@ -673,7 +626,7 @@ class MainWindow(QMainWindow):
 		self.threadpool.start(self.worker_serialport)					
 		
 	def on_button_disconnect_click(self):
-		print("Disconnect Button Clicked")
+		logging.debug("Disconnect Button Clicked")
 		self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
 		self.button_serial_connect.setEnabled(True)
 		self.combo_serial_port.setEnabled(True)
@@ -690,9 +643,9 @@ class MainWindow(QMainWindow):
 		
 		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
 		#self.serial_connect(port_name)
-		print("Method on_port_select called	")
+		logging.debug("Method on_port_select called	")
 		self.serial_port_name = port_name
-		print(self.serial_port_name)
+		logging.debug(self.serial_port_name)
 		
 		
 	def on_port_error(self,error_type):												# triggered by the serial thread, shows a window saying port is used by sb else.
@@ -707,7 +660,7 @@ class MainWindow(QMainWindow):
 	def handle_port_errors(self):										# made a trick, port_errors is a class variable (yup, dirty as fuck !!!)
 		
 		if(self.error_type == 1):										# this means already open, should never happen.
-			print("ERROR TYPE 1")										
+			logging.warning("ERROR TYPE 1")										
 			d = QMessageBox.critical(
 				self,
 				"Serial port Blocked",
@@ -715,7 +668,7 @@ class MainWindow(QMainWindow):
 				buttons=QMessageBox.Ok
 			)		
 		if(self.error_type == 2):										# this means device not connected
-			print("ERROR TYPE 2")
+			logging.warning("ERROR TYPE 2")
 			d = QMessageBox.critical(
 				self,
 				"Serial Device is not connected",
@@ -733,7 +686,7 @@ class MainWindow(QMainWindow):
 			self.on_button_disconnect_click()							# resetting to the default "waiting for connect" situation
 			self.handle_errors_flag = False		
 		if(self.error_type == 4):										# this means device not connected
-			print("ERROR TYPE 4")
+			logging.warning("ERROR TYPE 4")
 			d = QMessageBox.critical(
 				self,
 				"Serial Device Unreachable",
@@ -741,15 +694,6 @@ class MainWindow(QMainWindow):
 				buttons=QMessageBox.Ok
 			)		
 		self.error_type = None											# cleaning unhnandled errors flags. 
-
-
-	# creates a full palete with as many buttons as colors as defined in COLORS
-	def add_palette_buttons(self,layout):
-		for c in COLORS:
-			b = QPaletteButton(c)
-			b.pressed.connect(lambda c = c: self.canvas.set_pen_color(c))	# not completely sure about how lambda functions work
-			layout.addWidget(b)
-
 
 	# check all themes and use lambda functions may be an option to use more themes #
 	def set_dark_theme(self):
@@ -778,11 +722,11 @@ class MainWindow(QMainWindow):
 		self.get_serial_ports()											# meeded to list the serial ports at the menu
 		# 3. How to ensure which serial ports are available ? (grey out the unusable ones)
 		# 4. How to display properly each available serial port at the menu ?
-		print (self.serial_ports)
+		logging.debug (self.serial_ports)
 		if self.serial_ports != []:
 			for port in self.serial_ports:
 				port_name = port[0]
-				print(port_name)
+				logging.debug(port_name)
 				b = self.serial_port_menu.addAction(port_name)
 				# WE WON'T TRIGGER THE CONNECTION FROM THE BUTTON PUSH ANYMORE. 
 				b.triggered.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))				# just need to add somehow the serial port name here, and we're done.
@@ -809,8 +753,10 @@ class MainWindow(QMainWindow):
 			self.full_screen_flag = False
 			logging.debug("Full Screen DISABLED")
 	
-
-
+	def on_sc_f10(self):
+		logging.debug("Shortcut F10 pushed")
+		
+	
 
 		
 app = QApplication(sys.argv)
