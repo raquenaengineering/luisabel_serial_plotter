@@ -23,7 +23,6 @@ class MyGraph(pg.PlotWidget):
 	max_plots = 4														# maximum number of plots
 	first = True														# first iteration only creating the plots
 	plot_tick_ms = 1													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
-	data_tick_ms = 0.5
 	
 	
 	dataset = []														# complete dataset, this should go to a file.							
@@ -61,35 +60,8 @@ class MyGraph(pg.PlotWidget):
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
 		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
-		
-		self.data_timer = QTimer()
-		self.data_timer.timeout.connect(self.on_data_timer)
-		self.data_timer.start(self.data_tick_ms)
 
-
-	def on_data_timer(self):										# this indeed, should come from an external source !!!
-		t0 = time.time()
-		logging.debug("length of dataset: " + str(len(self.dataset)))
-		self.dataset[0].append(25)
-		for i in range(1,self.max_plots):
-			for j in range(50):
-				self.dataset[i].append(random.randrange(0,100))
-			try:	
-				self.plot_subset[i] = []
-				
-				for j in range(len(self.dataset[i])-(self.max_points-1),(len(self.dataset[i]))):
-					self.plot_subset[i].append(self.dataset[i][j])
-			except Exception as e :
-				print(e)
-			
-			
-		self.dataset_changed = True
-		t = time.time()
-		dt = t - t0
-		logging.debug("execution time add_stuff_dataset " + str(dt))
-		
-		
-		
+	
 	def on_plot_timer(self):
 		
 		t0 = time.time()
@@ -129,15 +101,47 @@ class MyGraph(pg.PlotWidget):
 		logging.debug("execution time on_plot_timer: " + str(dt))		
 
 class MainWindow(QMainWindow):
-		# constructor # 
+	
+	# class variables #
+	data_tick_ms = 1
+	
+	
+	# constructor # 
 	def __init__(self):
 		
 		super().__init__()
 		
-		self.show()
+		self.data_timer = QTimer()
+		self.data_timer.timeout.connect(self.on_data_timer)
+		self.data_timer.start(self.data_tick_ms)
+
+		# add graph and show #
 		self.graph = MyGraph()
 		self.setCentralWidget(self.graph)
+		# last step is showing the window #
+		self.show()
 
+	def on_data_timer(self):											# this indeed, should come from an external source !!!
+		t0 = time.time()
+		logging.debug("length of dataset: " + str(len(self.graph.dataset)))
+		self.graph.dataset[0].append(25)								# does the dataset belong to the graph, or only the plot_subset ??? --> only plot_subset --> next fix iteration.
+		for i in range(1,self.graph.max_plots):
+			for j in range(50):
+				self.graph.dataset[i].append(random.randrange(0,100))
+			try:	
+				self.graph.plot_subset[i] = []
+				
+				for j in range(len(self.graph.dataset[i])-(self.graph.max_points-1),(len(self.graph.dataset[i]))):
+					self.graph.plot_subset[i].append(self.graph.dataset[i][j])
+			except Exception as e :
+				print(e)
+			
+			
+		self.graph.dataset_changed = True
+		t = time.time()
+		dt = t - t0
+		logging.debug("execution time add_stuff_dataset " + str(dt))
+		
 
 app = QApplication([])
 app.setStyle("Fusion")													# required to use it here
