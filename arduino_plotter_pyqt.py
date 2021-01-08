@@ -16,6 +16,8 @@ logging.basicConfig(level = logging.WARNING)
 # custom packages #
 
 import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
+from my_graph import my_graph						# custom graph based om pyqtgraph, as a module with its own tests.
+
 
 
 # qt imports #
@@ -68,50 +70,6 @@ import pyqtgraph as pg
 SERIAL_BUFFER_SIZE = 1000												# buffer size to store the incoming data from serial, to afterwards process it.
 SEPARATOR = "----------------------------------------------------------"
 
-
-COLORS = [
-# 17 undertones https://lospec.com/palette-list/17undertones
-"#000000",
-"#141923",
-"#414168",
-"#3a7fa7",
-"#35e3e3",
-"#8fd970",
-"#5ebb49",
-"#458352",
-"#dcd37b",
-"#fffee5",
-"#ffd035",
-"#cc9245",
-"#a15c3e",
-"#a42f3b",
-"#f45b7a",
-"#c24998",
-"#81588d",
-"#bcb0c2",
-"#ffffff",
-
-"#000000",
-"#141923",
-"#414168",
-"#3a7fa7",
-"#35e3e3",
-"#8fd970",
-"#5ebb49",
-"#458352",
-"#dcd37b",
-"#fffee5",
-"#ffd035",
-"#cc9245",
-"#a15c3e",
-"#a42f3b",
-"#f45b7a",
-"#c24998",
-"#81588d",
-"#bcb0c2",
-"#ffffff",
-
-]
 
 # ~ SERIAL_SPEEDS = [
 # ~ 300,
@@ -189,6 +147,9 @@ class Worker_serialport(QRunnable):
 		
 		while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
 			
+			
+			t0 = time.time()
+			
 			# 1. get everything to a string for easy handling
 			
 			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
@@ -203,17 +164,19 @@ class Worker_serialport(QRunnable):
 			logging.debug("Readed:")
 			logging.debug(readed)
 			
-			# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).
+			# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).########################
 		
 			vals = readed.replace(' ',',')								# replace empty spaces for commas. 
 			vals = vals.split(',')										# arduino serial plotter splits with both characters.
 			
-			logging.debug("Vals: ")
-			logging.debug(vals)
+			# ~ print("Vals: ")
+			# ~ print(vals)
 			valsf = []
 
 			if(vals[0] == ''):
+				self.timeouts = self.timeouts + 1
 				print("Timeout")
+				print("Total number of timeouts: "+ str(self.timeouts))
 			else:	
 				try:
 					for val in vals:
@@ -224,16 +187,32 @@ class Worker_serialport(QRunnable):
 					logging.debug("It contains also text");
 					# add to a captions vector
 					text_vals = vals
+			
+				# ~ print("len(dataset: )")	
+				# ~ print(len(mw.plot_frame.dataset))
+				# ~ print("mw.plot_frame.dataset: ")
+				# ~ print(mw.plot_frame.dataset)
+				# ~ print("valsf:")
+				# ~ print(valsf)
 				
+				if((mw.plot_frame.dataset == []) and (valsf != [])):							# if the dataset is empty (a dataset reset function may  be useful)
+					for val in valsf:
+						mw.plot_frame.dataset.append([])
+				else:														# if already data, we append to each sub array. 
+					for i in range(len(valsf)):								# this may not be the greatest option.
+						mw.plot_frame.dataset[i].append(valsf[i])
+					
+					mw.plot_frame.dataset_changed = True					# we've changed the dataset, so we update the plot.
+
+			t = time.time()
 			
-			if(mw.plot_frame.dataset == []):							# if the dataset is empty (a dataset reset function may  be useful)
-				for val in valsf:
-					mw.plot_frame.dataset.append([])
-			else:														# if already data, we append to each sub array. 
-				for i in range(0,len(valsf)):							# this may not be the greatest option.
-					mw.plot_frame.dataset[i].append(valsf[i])
-				mw.plot_frame.dataset_changed = True					# we've changed the dataset, so we update the plot.
+			dt = t - t0
 			
+			print(dt)
+					
+			##################################################################################################################		
+					
+								
 			# 4. MANAGE MESSAGES TO BE SENT VIA SERIAL.
 			if(mw.serial_message_to_send != None):
 				logging.debug("New message to be sent:")
@@ -328,84 +307,6 @@ class Worker_serialport(QRunnable):
 
 class WorkerSignals_serialport(QObject):
 	port_error_other = pyqtSignal(str)
-	
-
-class MyGraph(pg.PlotWidget):
-	
-	
-	max_points = 1000													# maximum points per plot
-	max_plots = 16														# maximum number of plots
-	first = True														# first iteration only creating the plots
-	
-	dataset = []							
-	plot_refs = []
-													
-	dataset_changed = False
-
-	#dataset = np.array()
-	
-	def __init__(self):
-		super().__init__()		
-		pg.setConfigOptions(antialias=True)							# antialiasing for nicer view. 
-		#self.setBackground([200,200,200])								# changing default background color.
-		self.setBackground([70,70,70])									# changing default background color.
-		self.showGrid(x = True, y = True, alpha = 0.5)
-		# do something to set the default axes range
-		#self.setRange(xRange = [0,1000], yRange = [-200,200])
-		self.setRange(xRange = [0,50], yRange = [0,256])
-		self.setLimits(xMin=-10, xMax=1000000, yMin=-1000, yMax=1000)		# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
-		self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
-		legend = self.addLegend()
-		
-		self.plot_timer = QTimer()										# used to update the 
-		self.plot_timer.timeout.connect(self.on_plot_timer)				# regularly check if the serial error flag is set
-		self.plot_timer.start(10)										# will also control the refresh rate.	
-		
-		
-		# ~ c1 = self.plot([1,3,2,4], pen='y', name='Yellow Plot')
-		# ~ c2 = self.plot([2,1,4,3], pen='b', fillLevel=0, fillBrush=(255,255,255,30), name='Blue Plot')
-		# ~ c3 = self.addLine(y=4, pen='y')
-		
-		#style1 = pg.PlotDataItem(pen=None,symbol='o',symbolBrush=["m"])
-		# ~ legend.addItem(name = "Variable 1", item = 1)
-
-
-	def add_plots(self):												# optionally, make possible single or multiple plots
-		# FIRST: CREATE THE PLOTS 
-			# bring this to the graph creator 
-		print("Add graph.plots_method called")
-			
-		#for dataplot in self.dataset:
-		for i in range (len(self.dataset)):
-			print("val of i:" + str(i))
-			# HOW TO REFERENCE THE PLOTS CREATED ON THIS WAY ??? #
-			# plot = self.plot(self.dataset[i], pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name ="Plot" + str(i))
-			# p = self.plot(self.dataset[i], pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
-			p = self.plot(self.dataset[i], pen = (COLORS[i]),name ="Plot" + str(i))
-
-			self.plot_refs.append(p)
-
-	def on_plot_timer(self):
-
-		# MOVE TO NUMPY N-DIMENSIONAL ARRAYS #
-
-		# update all plots
-		#c1 = self.plot([1,3,2,4,5,12,3,1,5,6,9,7,8], pen='y')	
-			
-		# SECOND: UPDATE THE PLOTS:
-			
-		if(self.dataset_changed == True):											# redraw only if there are changes on the dataset
-			if self.first == True:
-				self.add_plots()
-				self.first = False
-			self.dataset_changed = False
-			for i in range(len(self.dataset)):
-				self.plot_refs[i].setData(self.dataset[i]) 
-			# ~ for dataplot in self.dataset:
-				# ~ #self.plot(dataplot, pen = 'r')
-				# ~ #self.plot(dataplot, pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)), name = "17")
-				# ~ self.setData
-			
 		
 # MAIN WINDOW #			
 
@@ -450,10 +351,10 @@ class MainWindow(QMainWindow):
 		# Other shortcuts #
 		self.sc_f = QShortcut(QKeySequence('f'), self)										# f
 		self.sc_f.activated.connect(self.full_screen)
-		# ~ self.sc_c = QShortcut(QKeySequence('c'), self)										# c		// c should disable itself, until d pressed.
-		# ~ self.sc_c.activated.connect(self.on_button_connect_click)
-		# ~ self.sc_d = QShortcut(QKeySequence('d'), self)										# d
-		# ~ self.sc_d.activated.connect(self.on_button_disconnect_click)	
+		self.sc_c = QShortcut(QKeySequence('c'), self)										# c		// c should disable itself, until d pressed.
+		self.sc_c.activated.connect(self.on_button_connect_click)
+		self.sc_d = QShortcut(QKeySequence('d'), self)										# d
+		self.sc_d.activated.connect(self.on_button_disconnect_click)	
 		self.sc_u = QShortcut(QKeySequence('u'), self)										# u
 		self.sc_u.activated.connect(self.update_serial_ports)	
 		self.palette = pyqt_custom_palettes.dark_palette()
@@ -508,7 +409,8 @@ class MainWindow(QMainWindow):
 		self.widget.setLayout(self.layoutV1)
 		self.setCentralWidget(self.widget)							
 		# graph / plot #
-		self.plot_frame = MyGraph()										# we'll use a custom class, so we can modify the defaults via class definition
+		#self.plot_frame = MyGraph()
+		self.plot_frame = my_graph()										# we'll use a custom class, so we can modify the defaults via class definition
 		self.layoutV1.addWidget(self.plot_frame)
 		# buttons / menus # 
 		self.layoutH1 = QHBoxLayout()
@@ -690,6 +592,7 @@ class MainWindow(QMainWindow):
 		self.combo_endline_params.setEnabled(True)
 		self.textbox_send_command.setEnabled(False)
 		self.worker_serialport.done = True								# finishes the thread execution
+		self.worker_serialport.serial_port.close()									# quite clear
 					
 	def on_port_select(self,port_name):				# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
@@ -755,10 +658,13 @@ class MainWindow(QMainWindow):
 	def set_dark_theme(self):
 		self.palette = pyqt_custom_palettes.dark_palette()
 		self.setPalette(self.palette)
+		self.plot_frame.setBackground([60,60,60])
 		
 	def set_light_theme(self):
 		self.palette = pyqt_custom_palettes.light_palette()
 		self.setPalette(self.palette)
+		self.plot_frame.setBackground([200,200,200])
+
 
 	def set_re_theme(self):
 		self.palette = pyqt_custom_palettes.re_palette()
