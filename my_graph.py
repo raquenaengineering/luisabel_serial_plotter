@@ -37,9 +37,7 @@ class my_graph(pg.PlotWidget):
 	t = []																# independent variable, with "max_points" points. 
 	for i in range(max_points):
 		t.append(i)
-		
-	time.sleep(2)
-	
+			
 	max_plots = 12														# maximum number of plots
 	first = True														# first iteration only creating the plots
 	plot_tick_ms = 1													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
@@ -93,7 +91,7 @@ class my_graph(pg.PlotWidget):
 		
 			for i in range (len(self.plot_subset)):
 				logging.debug("val of i:" + str(i))
-				p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
+				#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
 				p = self.plot(pen = (COLORS[i]),name ="Plot" + str(i))
 
 				self.plot_refs.append(p)
@@ -107,8 +105,12 @@ class my_graph(pg.PlotWidget):
 			for i in range(len(self.dataset)):
 				 self.plot_refs[i].setData(self.plot_subset[i]) 			# required for update: reassign references to the plots
 				# self.plot_refs[i].setData(self.t, self.plot_subset[i]) 			# required for update: reassign references to the plots
-				
+						
+			for i in range(0,self.max_plots):
+				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
+			
 			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
+		
 				
 		t = time.time()
 		dt = t - t0
@@ -141,18 +143,17 @@ if __name__ == "__main__":
 			# last step is showing the window #
 			self.show()
 
-		def on_data_timer(self):											# this indeed, should come from an external source !!!
+		def on_data_timer(self):											# simulate data coming from external source at regular rate.
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.graph.dataset)))
 			
 			for i in range(0,self.graph.max_plots):
 				for j in range(50):
 					self.graph.dataset[i].append(random.randrange(0,100))
-				try:	
-					self.graph.plot_subset[i] = self.graph.dataset[i][-self.graph.max_points:]	# gets the last "max_points" of the dataset.
-	#
-				except Exception as e :
-					print(e)
+					
+				# THIS NEEDS TO GO TO THE MY_GRAPH !!!
+				#self.graph.plot_subset[i] = self.graph.dataset[i][-self.graph.max_points:]	# gets the last "max_points" of the dataset.
+
 				
 				
 			self.graph.dataset_changed = True

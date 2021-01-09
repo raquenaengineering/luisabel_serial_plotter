@@ -62,9 +62,6 @@ from PyQt5.QtCore import(
 
 )
 
-import pyqtgraph as pg
-
-
 # GLOBAL VARIABLES #
 
 SERIAL_BUFFER_SIZE = 1000												# buffer size to store the incoming data from serial, to afterwards process it.
@@ -153,6 +150,9 @@ class Worker_serialport(QRunnable):
 			# 1. get everything to a string for easy handling
 			
 			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
+			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
+			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
+
 			logging.debug("String as readed: ")
 			logging.debug(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
 			logging.debug("Endline: ")
@@ -200,9 +200,12 @@ class Worker_serialport(QRunnable):
 						mw.plot_frame.dataset.append([])
 				else:														# if already data, we append to each sub array. 
 					for i in range(len(valsf)):								# this may not be the greatest option.
-						mw.plot_frame.dataset[i].append(valsf[i])
+						for j in range(5):
+							mw.plot_frame.dataset[i].append(valsf[i])
 					
 					mw.plot_frame.dataset_changed = True					# we've changed the dataset, so we update the plot.
+					
+
 
 			t = time.time()
 			
@@ -663,7 +666,7 @@ class MainWindow(QMainWindow):
 	def set_light_theme(self):
 		self.palette = pyqt_custom_palettes.light_palette()
 		self.setPalette(self.palette)
-		self.plot_frame.setBackground([200,200,200])
+		self.plot_frame.setBackground([220,220,220])
 
 
 	def set_re_theme(self):
