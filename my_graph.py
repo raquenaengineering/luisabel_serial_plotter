@@ -21,29 +21,25 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
+
 ]
 
+MAX_PLOTS = 24															# Absolute maximum number of plots, change if needed !!
 
 
-class my_graph(pg.PlotWidget):
+class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
 	
 	# Arduino serial plotter has 500 points max. on the x axis.
-	max_points = 500													# maximum points per plot
+	max_points = None													# maximum points per plot
 	
-	t = []																# independent variable, with "max_points" points. 
-	for i in range(max_points):
-		t.append(i)
+	tvec = []															# independent variable, with "max_points" points. 
 			
-	max_plots = 12														# maximum number of plots
+	n_plots = 12														# number of plots on the current plot. 
 	first = True														# first iteration only creating the plots
-	plot_tick_ms = 1													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
+	plot_tick_ms = 200													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	
 	
-	dataset = []														# complete dataset, this should go to a file.							
+	#dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
 	plot_subset = []
 													
@@ -52,16 +48,19 @@ class my_graph(pg.PlotWidget):
 
 	#dataset = np.array()
 	
-	def __init__(self):
+	def __init__(self, dataset = None, max_points = 500):
+
+		for i in range(max_points):										# create a time vector --> move to NUMPY !!!
+			self.tvec.append(i)
 		
-			# creating a fixed size dataset #
-		for i in range(self.max_plots):
-			self.dataset.append([])
+		self.dataset = dataset											# get the reference to the dataset given as input for the constructor
+		self.max_points = max_points
+		
 			
-		# ~ for i in range(self.max_plots):									# this is the section of the dataset which will be plotted (always 1000 points per set)
+		# ~ for i in range(self.max_plots):								# this is the section of the dataset which will be plotted (always 1000 points per set)
 			# ~ self.plot_subset.append([])
 			
-		self.plot_subset = self.dataset[-(self.max_points):]			# is this by reference? 	
+		self.plot_subset = self.dataset[:self.n_plots][-(self.max_points):]	 # get only the portion of the dataset which needs to be printed. 	
 		
 		
 		super().__init__()		
@@ -71,12 +70,13 @@ class my_graph(pg.PlotWidget):
 		self.showGrid(x = True, y = True, alpha = 0.5)
 		# do something to set the default axes range
 		#self.setRange(xRange = [0,1000], yRange = [-200,200])
-		self.setRange(xRange = [0,self.max_points], yRange = [-255,255])
+		self.setRange(xRange = [0,self.max_points], yRange = [-1200,1200])
 		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=1000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
-		self.enableAutoRange(axis='y', enable = True)
+		#self.enableAutoRange(axis='y', enable = True)
 		legend = self.addLegend()
 		
+			
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
 		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
@@ -92,7 +92,7 @@ class my_graph(pg.PlotWidget):
 			for i in range (len(self.plot_subset)):
 				logging.debug("val of i:" + str(i))
 				#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
-				p = self.plot(pen = (COLORS[i]),name ="Plot" + str(i))
+				p = self.plot(pen = (COLORS[i%24]),name ="Plot" + str(i))
 
 				self.plot_refs.append(p)
 
@@ -102,11 +102,13 @@ class my_graph(pg.PlotWidget):
 		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
 
 			self.dataset_changed = False
-			for i in range(len(self.dataset)):
+			for i in range(len(self.plot_subset)):
 				 self.plot_refs[i].setData(self.plot_subset[i]) 			# required for update: reassign references to the plots
 				# self.plot_refs[i].setData(self.t, self.plot_subset[i]) 			# required for update: reassign references to the plots
+				
+				
 						
-			for i in range(0,self.max_plots):
+			for i in range(0,self.n_plots):		
 				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
 			
 			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
@@ -114,7 +116,7 @@ class my_graph(pg.PlotWidget):
 				
 		t = time.time()
 		dt = t - t0
-		logging.debug("execution time on_plot_timer: " + str(dt))		
+		print("execution time on_plot_timer: " + str(dt))		
 
 
 
@@ -125,20 +127,29 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		
 		# class variables #
-		data_tick_ms = 1
-		
-		
+		data_tick_ms = 5
+
+		#creating a fixed size dataset #
+		dataset = []
+	
 		# constructor # 
 		def __init__(self):
 			
 			super().__init__()
+
+			# initializing empty dataset #
+			for i in range(MAX_PLOTS):									# we're creating a dataset with an escess of rows!!!
+				self.dataset.append([])	
+
+			# add graph and show #
+			self.graph = MyGraph(dataset = self.dataset)					# extend the constructor, to force giving a reference to a dataset ???
+
 			
 			self.data_timer = QTimer()
 			self.data_timer.timeout.connect(self.on_data_timer)
 			self.data_timer.start(self.data_tick_ms)
 
-			# add graph and show #
-			self.graph = my_graph()
+
 			self.setCentralWidget(self.graph)
 			# last step is showing the window #
 			self.show()
@@ -147,16 +158,16 @@ if __name__ == "__main__":
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.graph.dataset)))
 			
-			for i in range(0,self.graph.max_plots):
+			for i in range(0,MAX_PLOTS):
 				for j in range(50):
-					self.graph.dataset[i].append(random.randrange(0,100))
+					self.dataset[i].append(random.randrange(0,100))
 					
 				# THIS NEEDS TO GO TO THE MY_GRAPH !!!
 				#self.graph.plot_subset[i] = self.graph.dataset[i][-self.graph.max_points:]	# gets the last "max_points" of the dataset.
 
 				
 				
-			self.graph.dataset_changed = True
+			self.graph.dataset_changed = True		# replace this for an update method call which changes a flag?
 			t = time.time()
 			dt = t - t0
 			logging.debug("execution time add_stuff_dataset " + str(dt))

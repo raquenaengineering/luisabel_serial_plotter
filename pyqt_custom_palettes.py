@@ -42,6 +42,9 @@ class dark_palette(QPalette):
 		self.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80)) 
 		self.setColor(QPalette.HighlightedText, Qt.white) 
 		self.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127)) 
+		
+		#self.setColor(QPalette.Menu, QColor(0, 127, 127)) 
+
 
 
 class light_palette(QPalette):

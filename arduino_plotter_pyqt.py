@@ -16,8 +16,8 @@ logging.basicConfig(level = logging.WARNING)
 # custom packages #
 
 import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
-from my_graph import my_graph						# custom graph based om pyqtgraph, as a module with its own tests.
-
+from my_graph import MyGraph						# custom graph based om pyqtgraph, as a module with its own tests.
+import my_graph										# for the global variables of the namespace.
 
 
 # qt imports #
@@ -123,9 +123,9 @@ class Worker_serialport(QRunnable):
 	done = False														# if done, thread should finish.
 	timeouts = 0														# counts number of timeouts the serial port has made until the moment.
 
-	# ~ ## constructor ##													# how does it work with the constructor and the run method ??
+	# ~ ## constructor ##												# how does it work with the constructor and the run method ??
 	# ~ def __init__(self):														
-		# ~ self.signals = WorkerSignals_serialport()						# signals triggered by the thread, to communicate with the MAIN WINDOW
+		# ~ self.signals = WorkerSignals_serialport()					# signals triggered by the thread, to communicate with the MAIN WINDOW
 		
 		
 	## run method ##
@@ -137,85 +137,34 @@ class Worker_serialport(QRunnable):
 		self.serial_port = serial.Serial()
 		
 		
-		#2 . GET THE REQUIRED CONFIGURATION DATA OF THER SERIAL PORT FROM MAIN WINDOW
+		#2 . GET THE REQUIRED CONFIGURATION DATA OF THE SERIAL PORT FROM MAIN WINDOW
 		#3 . LOOP GETTING THE DATA WHILE THE PORT IS OPEN.
 		
 		self.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
+		read_buffer = ""														
+		
 		while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
-			
-			
 			t0 = time.time()
 			
 			# 1. get everything to a string for easy handling
 			
-			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
-			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
-			readed = self.serial_port.read_until(mw.endline)						# this should block the loop, so needs to go to a THREAD
+			t0 = time.time()
+			byte = self.serial_port.read()								# easiest is to convert the byte to char and create a string.
+			logging.debug(str(byte))
+			char = byte.decode('utf-8')
+			read_buffer = read_buffer + char
+			logging.debug(read_buffer)
 
-			logging.debug("String as readed: ")
-			logging.debug(readed)	# THIS IS BYTES! SHOULD BE CONVERTED!!!		
-			logging.debug("Endline: ")
-			logging.debug(mw.endline)
-			logging.debug("Readed.endline found at character: ")
-			i = readed.find(mw.endline)									# index where the the endline starts.
-			readed = readed[:i]											# this removes the endline.								
-			readed = readed.decode("utf-8")								# convert to string
-			logging.debug("Readed:")
-			logging.debug(readed)
 			
-			# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).########################
-		
-			vals = readed.replace(' ',',')								# replace empty spaces for commas. 
-			vals = vals.split(',')										# arduino serial plotter splits with both characters.
-			
-			# ~ print("Vals: ")
-			# ~ print(vals)
-			valsf = []
-
-			if(vals[0] == ''):
-				self.timeouts = self.timeouts + 1
-				print("Timeout")
-				print("Total number of timeouts: "+ str(self.timeouts))
-			else:	
-				try:
-					for val in vals:
-						valsf.append(float(val))
-					# ~ print("valsf")
-					# ~ print(valsf)
-				except:
-					logging.debug("It contains also text");
-					# add to a captions vector
-					text_vals = vals
-			
-				# ~ print("len(dataset: )")	
-				# ~ print(len(mw.plot_frame.dataset))
-				# ~ print("mw.plot_frame.dataset: ")
-				# ~ print(mw.plot_frame.dataset)
-				# ~ print("valsf:")
-				# ~ print(valsf)
-				
-				if((mw.plot_frame.dataset == []) and (valsf != [])):							# if the dataset is empty (a dataset reset function may  be useful)
-					for val in valsf:
-						mw.plot_frame.dataset.append([])
-				else:														# if already data, we append to each sub array. 
-					for i in range(len(valsf)):								# this may not be the greatest option.
-						for j in range(5):
-							mw.plot_frame.dataset[i].append(valsf[i])
-					
-					mw.plot_frame.dataset_changed = True					# we've changed the dataset, so we update the plot.
-					
-
-
-			t = time.time()
-			
-			dt = t - t0
-			
-			print(dt)
-					
-			##################################################################################################################		
-					
-								
+			# ~ try:														# try/except may not be needed
+			if (read_buffer[-(len(mw.endline)):] == mw.endline):
+				#print("STRING IS COMPLETE")
+				self.add_arduino_data(read_buffer)
+				read_buffer = ""									# reset read_buffer.				
+			# ~ except:														# it seems read_buffer[-x], doesn't generate exceptions, maybe unneeded 
+				# ~ print("string too short")
+							
 			# 4. MANAGE MESSAGES TO BE SENT VIA SERIAL.
 			if(mw.serial_message_to_send != None):
 				logging.debug("New message to be sent:")
@@ -225,6 +174,10 @@ class Worker_serialport(QRunnable):
 				self.serial_port.write(message,)						# send message
 				mw.serial_message_to_send = None						# reset message
 				logging.debug("message sent")
+
+			t = time.time()
+			dt = t - t0
+			print("dt serial read: " +str(dt))
 
 		# 5. CLOSE THE OPEN PORT. 	
 		
@@ -236,6 +189,9 @@ class Worker_serialport(QRunnable):
 		mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
 		logging.debug("Thread Complete")
 		logging.debug(SEPARATOR)
+
+
+
 		
 	def serial_connect(self, port_name):
 		logging.debug("serial_connect method called")
@@ -308,6 +264,56 @@ class Worker_serialport(QRunnable):
 		logging.debug("done: ")
 		logging.debug(self.done)			
 
+
+	def add_arduino_data(self,readed):
+		
+		# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).########################
+	
+		vals = readed.replace(' ',',')								# replace empty spaces for commas. 
+		vals = vals.split(',')										# arduino serial plotter splits with both characters.
+
+		valsf = []
+		
+		mw.plot_frame.n_plots = 5
+	
+		if(vals[0] == ''):
+			self.timeouts = self.timeouts + 1
+			print("Timeout")
+			print("Total number of timeouts: "+ str(self.timeouts))
+		else:	
+			try:
+				for val in vals:
+					valsf.append(float(val))
+			except:
+				logging.debug("It contains also text");
+				# add to a captions vector
+				text_vals = vals
+				
+		
+			# ~ print("len(dataset: )")	
+			# ~ print(len(mw.plot_frame.dataset))
+			# ~ print("mw.plot_frame.dataset: ")
+			# ~ print(mw.plot_frame.dataset)
+			# ~ print("valsf:")
+			# ~ print(valsf)
+			
+			# ~ print("Dataset:")
+			# ~ print(mw.plot_frame.dataset)
+			
+			# as it is now, the dataset is dimensioned to MAX_PLOTS once created, so this will never happen
+			# ~ if((mw.plot_frame.dataset == []) and (valsf != [])):		# if the dataset is empty (a dataset reset function may  be useful)
+				# ~ for val in valsf:
+					# ~ mw.plot_frame.dataset.append([])
+			# ~ else:													# if already data, we append to each sub array. 
+			for i in range(len(valsf)):									# this may not be the greatest option.
+				#for j in range(1):										# to make the plot squareish
+				mw.plot_frame.dataset[i].append(valsf[i])
+				
+			mw.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
+
+
+			##################################################################################################################		
+
 class WorkerSignals_serialport(QObject):
 	port_error_other = pyqtSignal(str)
 		
@@ -320,14 +326,18 @@ class MainWindow(QMainWindow):
 	serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
 	serial_port_name = None												# used to pass it to the worker dealing with the serial port.
 	serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
-	endline = b'\r\n'													# default value for endline is NL 
+	endline = '\r\n'													# default value for endline is CR+NL 
 	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
 	full_screen_flag = False
-	
+	dataset = []  
 	
 	# constructor # 
 	def __init__(self):
+		
+		# initializing empty dataset #
+		for i in range(my_graph.MAX_PLOTS):									# we're creating a dataset with an escess of rows!!!
+			self.dataset.append([])	
 		
 		super().__init__()
 		
@@ -342,7 +352,7 @@ class MainWindow(QMainWindow):
 		# timers #																			# AT LEAST ONE TO UPDATE THE PLOT !!!
 		self.internal_tasks_timer = QTimer()												# used for nasty stuff
 		self.internal_tasks_timer.timeout.connect(self.handle_port_errors)					# regularly check if the serial error flag is set
-		self.internal_tasks_timer.start(100)
+		self.internal_tasks_timer.start(1000)
 
 		# shortcuts #
 		
@@ -412,8 +422,9 @@ class MainWindow(QMainWindow):
 		self.widget.setLayout(self.layoutV1)
 		self.setCentralWidget(self.widget)							
 		# graph / plot #
-		#self.plot_frame = MyGraph()
-		self.plot_frame = my_graph()										# we'll use a custom class, so we can modify the defaults via class definition
+		self.plot_frame = MyGraph(dataset = self.dataset, 
+								max_points = 1000)						# we'll use a custom class, so we can modify the defaults via class definition
+		self.plot_frame.max_points = 1000								# width of the plot in points
 		self.layoutV1.addWidget(self.plot_frame)
 		# buttons / menus # 
 		self.layoutH1 = QHBoxLayout()
@@ -583,17 +594,19 @@ class MainWindow(QMainWindow):
 		self.combo_serial_speed.setEnabled(False)
 		self.combo_endline_params.setEnabled(False)
 		self.textbox_send_command.setEnabled(True)
+		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.worker_serialport = Worker_serialport()					# creates a serialport worker every time we push the button, PLEASE NOTE IT ALSO NEEDS TO BE DESTROYED!!!
 		self.threadpool.start(self.worker_serialport)					
 		
 	def on_button_disconnect_click(self):
-		logging.debug("Disconnect Button Clicked")
+		print("Disconnect Button Clicked")
 		self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
 		self.button_serial_connect.setEnabled(True)
 		self.combo_serial_port.setEnabled(True)
 		self.combo_serial_speed.setEnabled(True)
 		self.combo_endline_params.setEnabled(True)
 		self.textbox_send_command.setEnabled(False)
+		self.status_bar.showMessage("Disconnected")					# showing sth is happening. 
 		self.worker_serialport.done = True								# finishes the thread execution
 		self.worker_serialport.serial_port.close()									# quite clear
 					
