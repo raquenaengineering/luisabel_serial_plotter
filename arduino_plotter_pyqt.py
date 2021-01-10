@@ -129,7 +129,20 @@ class Worker_serialport(QRunnable):
 		
 		
 	## run method ##
-	def run(self):
+	
+	def run(self):														# used to test if I can get plotting done faster. 
+		while(True):
+			#5print(mw.plot_frame.plot_tick_ms)
+			valsf = [random.randrange(100), random.randrange(100), random.randrange(100), random.randrange(100)]
+			for i in range(len(valsf)):									# this may not be the greatest option.
+				#for j in range(1):										# to make the plot squareish
+				mw.plot_frame.dataset[i].append(valsf[i])
+					
+			mw.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
+		
+
+	
+	def run_2(self):
 		print("Thread Start")
 		
 		#1 . CREATE A SERIAL PORT OBJECT.
@@ -191,8 +204,6 @@ class Worker_serialport(QRunnable):
 		logging.debug(SEPARATOR)
 
 
-
-		
 	def serial_connect(self, port_name):
 		logging.debug("serial_connect method called")
 		logging.debug(port_name)
@@ -352,7 +363,18 @@ class MainWindow(QMainWindow):
 		# timers #																			# AT LEAST ONE TO UPDATE THE PLOT !!!
 		self.internal_tasks_timer = QTimer()												# used for nasty stuff
 		self.internal_tasks_timer.timeout.connect(self.handle_port_errors)					# regularly check if the serial error flag is set
-		self.internal_tasks_timer.start(1000)
+		self.internal_tasks_timer.start(50)
+
+##########################################################################
+	# ~ # USING TIMER INSTEAD OF THREAD, IT PLOTS MUCH FASTER !!!
+		
+		self.data_tick_ms = 20
+		self.data_timer = QTimer()
+		self.data_timer.timeout.connect(self.on_data_timer)
+		self.data_timer.start(self.data_tick_ms)
+
+##########################################################################
+
 
 		# shortcuts #
 		
@@ -371,6 +393,15 @@ class MainWindow(QMainWindow):
 		self.sc_u = QShortcut(QKeySequence('u'), self)										# u
 		self.sc_u.activated.connect(self.update_serial_ports)	
 		self.palette = pyqt_custom_palettes.dark_palette()
+		# arrow shortcuts #
+		self.sc_up = QShortcut(QKeySequence('UP'), self)									# 
+		self.sc_up.activated.connect(self.on_arrow_up)	
+		self.sc_up = QShortcut(QKeySequence('DOWN'), self)									# 
+		self.sc_up.activated.connect(self.on_arrow_down)	
+		self.sc_up = QShortcut(QKeySequence('LEFT'), self)									# 
+		self.sc_up.activated.connect(self.on_arrow_left)	
+		self.sc_up = QShortcut(QKeySequence('RIGHT'), self)									# 
+		self.sc_up.activated.connect(self.on_arrow_right)					
 		
 		# theme(palette) #
 		self.setPalette(self.palette)
@@ -426,6 +457,19 @@ class MainWindow(QMainWindow):
 								max_points = 1000)						# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = 1000								# width of the plot in points
 		self.layoutV1.addWidget(self.plot_frame)
+		# buttons for plot #
+		self.layoutH2 = QHBoxLayout()
+		self.layoutV1.addLayout(self.layoutH2)
+		# play button # 
+		self.button_play = QPushButton("Play")
+		self.button_play.clicked.connect(self.on_button_play)
+		self.layoutH2.addWidget(self.button_play)
+		# pause button # 
+		self.button_pause = QPushButton("Pause")
+		self.button_pause.clicked.connect(self.on_button_pause)
+		self.layoutH2.addWidget(self.button_pause)
+		
+		
 		# buttons / menus # 
 		self.layoutH1 = QHBoxLayout()
 		self.layoutV1.addLayout(self.layoutH1)
@@ -609,6 +653,21 @@ class MainWindow(QMainWindow):
 		self.status_bar.showMessage("Disconnected")					# showing sth is happening. 
 		self.worker_serialport.done = True								# finishes the thread execution
 		self.worker_serialport.serial_port.close()									# quite clear
+
+	def on_button_pause(self):
+		# pause the plot:
+		# so stop the update timer. #
+		print("on_button_pause method: ")
+		self.plot_frame.plot_timer.stop()									# but we won't be able to rearm...
+		
+	def on_button_play(self):
+		# pause the plot:
+		# so stop the update timer. #
+		print("on_button_pause method: ")
+		self.plot_frame.plot_timer.start()									# but we won't be able to rearm...
+				
+
+
 					
 	def on_port_select(self,port_name):				# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
@@ -621,6 +680,70 @@ class MainWindow(QMainWindow):
 		logging.debug("Method on_port_select called	")
 		self.serial_port_name = port_name
 		logging.debug(self.serial_port_name)
+
+
+	def on_arrow_up(self):
+		print("on_arrow_up method called")
+		# change y axis from plot
+		y_axis = self.plot_frame.getAxis('left').range
+		print(y_axis)
+		for i in range(len(y_axis)):
+			y_axis[i] = y_axis[i]/2
+		self.plot_frame.setRange(yRange = y_axis)
+		
+	def on_arrow_down(self):
+		print("on_arrow_down method called")		
+		# change y axis from plot
+		y_axis = self.plot_frame.getAxis('left').range
+		print(y_axis)
+		for i in range(len(y_axis)):
+			y_axis[i] = y_axis[i]*2
+		self.plot_frame.setRange(yRange = y_axis)		
+	def on_arrow_left(self):
+		print("on_arrow_left method called")
+		x_axis = self.plot_frame.getAxis('bottom').range
+		print(x_axis)
+		for i in range(len(x_axis)):
+			x_axis[i] = x_axis[i]/2
+		self.plot_frame.setRange(xRange = x_axis)			
+
+	def on_arrow_right(self):
+		print("on_arrow_right method called")
+		x_axis = self.plot_frame.getAxis('bottom').range
+		print(x_axis)
+		for i in range(len(x_axis)):
+			x_axis[i] = x_axis[i]*2
+		self.plot_frame.setRange(xRange = x_axis)	
+
+	def keyPressEvent(self, event):
+		if not event.isAutoRepeat():
+			print(event.text())		
+
+		
+######################################################################################################################
+	
+	# ~ # USING TIMER INSTEAD OF THREAD, IT PLOTS MUCH FASTER !!!
+
+	def on_data_timer(self):											# simulate data coming from external source at regular rate.
+		t0 = time.time()
+		
+		for i in range(0,my_graph.MAX_PLOTS):
+			for j in range(50):
+				self.dataset[i].append(random.randrange(0,100))
+				
+			# THIS NEEDS TO GO TO THE MY_GRAPH !!!
+			#self.graph.plot_subset[i] = self.graph.dataset[i][-self.graph.max_points:]	# gets the last "max_points" of the dataset.
+
+			
+			
+		self.plot_frame.dataset_changed = True		# replace this for an update method call which changes a flag?
+		t = time.time()
+		dt = t - t0
+		logging.debug("execution time add_stuff_dataset " + str(dt))
+
+######################################################################################################################
+
+
 		
 		
 	def on_port_error(self,error_type):												# triggered by the serial thread, shows a window saying port is used by sb else.
