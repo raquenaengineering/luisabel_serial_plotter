@@ -376,32 +376,7 @@ class MainWindow(QMainWindow):
 ##########################################################################
 
 
-		# shortcuts #
-		
-		# f keys shortcuts #
-		self.sc_f11 = QShortcut(QKeySequence("F11"), self)									# F11
-		self.sc_f11.activated.connect(self.full_screen)
-		self.sc_f10 = QShortcut(QKeySequence("F10"), self)									# F10
-		self.sc_f10.activated.connect(self.on_sc_f10)
-		# Other shortcuts #
-		self.sc_f = QShortcut(QKeySequence('f'), self)										# f
-		self.sc_f.activated.connect(self.full_screen)
-		self.sc_c = QShortcut(QKeySequence('c'), self)										# c		// c should disable itself, until d pressed.
-		self.sc_c.activated.connect(self.on_button_connect_click)
-		self.sc_d = QShortcut(QKeySequence('d'), self)										# d
-		self.sc_d.activated.connect(self.on_button_disconnect_click)	
-		self.sc_u = QShortcut(QKeySequence('u'), self)										# u
-		self.sc_u.activated.connect(self.update_serial_ports)	
-		self.palette = pyqt_custom_palettes.dark_palette()
-		# arrow shortcuts #
-		self.sc_up = QShortcut(QKeySequence('UP'), self)									# 
-		self.sc_up.activated.connect(self.on_arrow_up)	
-		self.sc_up = QShortcut(QKeySequence('DOWN'), self)									# 
-		self.sc_up.activated.connect(self.on_arrow_down)	
-		self.sc_up = QShortcut(QKeySequence('LEFT'), self)									# 
-		self.sc_up.activated.connect(self.on_arrow_left)	
-		self.sc_up = QShortcut(QKeySequence('RIGHT'), self)									# 
-		self.sc_up.activated.connect(self.on_arrow_right)					
+		# shortcuts moved to bottom #
 		
 		# theme(palette) #
 		self.setPalette(self.palette)
@@ -715,11 +690,37 @@ class MainWindow(QMainWindow):
 			x_axis[i] = x_axis[i]*2
 		self.plot_frame.setRange(xRange = x_axis)	
 
+	# KEYPRESS HANDLER FOR SHORTCUTS ####
 	def keyPressEvent(self, event):
 		if not event.isAutoRepeat():
-			print(event.text())		
-
-		
+			print(event.text())	
+			# FULL SHORTCUT LIST #	
+			# arrows#
+			if event.key() == Qt.Key_Up:
+				self.on_arrow_up()
+			elif event.key() == Qt.Key_Down:
+				self.on_arrow_down()	
+			elif event.key() == Qt.Key_Left:
+				self.on_arrow_left()
+			elif event.key() == Qt.Key_Right:
+				self.on_arrow_right()
+			#letters#
+			elif event.text() == 'f':
+				self.full_screen()
+			elif event.text() == 'c':
+				self.on_button_connect_click()
+			elif event.text() == 'd':
+				self.on_button_disconnect_click()
+			elif event.text() == 'u':
+				self.update_serial_ports()
+			elif event.text() == 'p':
+				self.on_button_pause()
+			elif event.text() == 'r':
+				self.on_button_play()
+				
+				
+				
+					
 ######################################################################################################################
 	
 	# ~ # USING TIMER INSTEAD OF THREAD, IT PLOTS MUCH FASTER !!!
