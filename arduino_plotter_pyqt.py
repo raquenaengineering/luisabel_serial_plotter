@@ -36,7 +36,7 @@ from PyQt5.QtWidgets import (
 	QDialog,
 	QMessageBox,														# Dialog with extended functionality. 
 	QShortcut,
-
+	QCheckBox,	
 
 	QSystemTrayIcon,
 	QTextEdit,
@@ -439,10 +439,20 @@ class MainWindow(QMainWindow):
 		self.widget.setLayout(self.layoutV1)
 		self.setCentralWidget(self.widget)							
 		# graph / plot #
+		self.layout_plot = QHBoxLayout()								# plot plus buttons to enable/disable graphs
+		self.layoutV1.addLayout(self.layout_plot)
 		self.plot_frame = MyGraph(dataset = self.dataset, 
-								max_points = 1000)						# we'll use a custom class, so we can modify the defaults via class definition
-		self.plot_frame.max_points = 1000								# width of the plot in points
-		self.layoutV1.addWidget(self.plot_frame)
+								max_points = 2000)						# we'll use a custom class, so we can modify the defaults via class definition
+		self.plot_frame.max_points = 2000								# width of the plot in points
+		self.layout_plot.addWidget(self.plot_frame)
+		self.layout_channel_select = QVBoxLayout()
+		self.layout_plot.addLayout(self.layout_channel_select)
+		for i in range(1, my_graph.MAX_PLOTS+1):
+			cb = QCheckBox("CHANNEL " + str(i))
+			self.layout_channel_select.addWidget(cb)
+		
+		
+		
 		# buttons for plot #
 		self.layout_player = QHBoxLayout()
 		self.layoutV1.addLayout(self.layout_player)
