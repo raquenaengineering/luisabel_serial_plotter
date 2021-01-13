@@ -115,206 +115,206 @@ ENDLINE_OPTIONS = [
 
 # THREAD STUFF #
 
-class Worker_serialport(QRunnable):
+# ~ class Worker_serialport(QRunnable):
 	
 	
-	# class variables #
+	# ~ # class variables #
 	
-	serial_port = None
+	# ~ serial_port = None
 	
-	done = False														# if done, thread should finish.
-	timeouts = 0														# counts number of timeouts the serial port has made until the moment.
+	# ~ done = False														# if done, thread should finish.
+	# ~ timeouts = 0														# counts number of timeouts the serial port has made until the moment.
 
-	# ~ ## constructor ##												# how does it work with the constructor and the run method ??
+	## constructor ##												# how does it work with the constructor and the run method ??
 	# ~ def __init__(self):														
 		# ~ self.signals = WorkerSignals_serialport()					# signals triggered by the thread, to communicate with the MAIN WINDOW
 		
 		
-	## run method ##
+	# ~ ## run method ##
 	
-	def run(self):														# used to test if I can get plotting done faster. 
-		while(True):
-			#5print(mw.plot_frame.plot_tick_ms)
-			valsf = [random.randrange(100), random.randrange(100), random.randrange(100), random.randrange(100)]
-			for i in range(len(valsf)):									# this may not be the greatest option.
-				#for j in range(1):										# to make the plot squareish
-				mw.plot_frame.dataset[i].append(valsf[i])
+	# ~ def run(self):														# used to test if I can get plotting done faster. 
+		# ~ while(True):
+			# ~ #5print(mw.plot_frame.plot_tick_ms)
+			# ~ valsf = [random.randrange(100), random.randrange(100), random.randrange(100), random.randrange(100)]
+			# ~ for i in range(len(valsf)):									# this may not be the greatest option.
+				# ~ #for j in range(1):										# to make the plot squareish
+				# ~ mw.plot_frame.dataset[i].append(valsf[i])
 					
-			mw.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
+			# ~ mw.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
 		
 
 	
-	def run_2(self):
-		print("Thread Start")
+	# ~ def run_2(self):
+		# ~ print("Thread Start")
 		
-		#1 . CREATE A SERIAL PORT OBJECT.
+		# ~ #1 . CREATE A SERIAL PORT OBJECT.
 		
-		self.serial_port = serial.Serial()
+		# ~ self.serial_port = serial.Serial()
 		
 		
-		#2 . GET THE REQUIRED CONFIGURATION DATA OF THE SERIAL PORT FROM MAIN WINDOW
-		#3 . LOOP GETTING THE DATA WHILE THE PORT IS OPEN.
+		# ~ #2 . GET THE REQUIRED CONFIGURATION DATA OF THE SERIAL PORT FROM MAIN WINDOW
+		# ~ #3 . LOOP GETTING THE DATA WHILE THE PORT IS OPEN.
 		
-		self.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
+		# ~ self.serial_connect(mw.serial_port_name)									# using a global variable for this is a bad idea!!! --> dunno how to do it better ...
 		
-		read_buffer = ""														
+		# ~ read_buffer = ""														
 		
-		while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
-			t0 = time.time()
+		# ~ while ((self.serial_port.is_open == True) and (self.done == False)):		# move the isopen port to the place WHERE THE DONE FLAG IS ENABLED.						
+			# ~ t0 = time.time()
 			
-			# 1. get everything to a string for easy handling
+			# ~ # 1. get everything to a string for easy handling
 			
-			t0 = time.time()
-			byte = self.serial_port.read()								# easiest is to convert the byte to char and create a string.
-			logging.debug(str(byte))
-			char = byte.decode('utf-8')
-			read_buffer = read_buffer + char
-			logging.debug(read_buffer)
+			# ~ t0 = time.time()
+			# ~ byte = self.serial_port.read()								# easiest is to convert the byte to char and create a string.
+			# ~ logging.debug(str(byte))
+			# ~ char = byte.decode('utf-8')
+			# ~ read_buffer = read_buffer + char
+			# ~ logging.debug(read_buffer)
 
 			
 			# ~ try:														# try/except may not be needed
-			if (read_buffer[-(len(mw.endline)):] == mw.endline):
-				#print("STRING IS COMPLETE")
-				self.add_arduino_data(read_buffer)
-				read_buffer = ""									# reset read_buffer.				
+			# ~ if (read_buffer[-(len(mw.endline)):] == mw.endline):
+				# ~ #print("STRING IS COMPLETE")
+				# ~ self.add_arduino_data(read_buffer)
+				# ~ read_buffer = ""									# reset read_buffer.				
 			# ~ except:														# it seems read_buffer[-x], doesn't generate exceptions, maybe unneeded 
 				# ~ print("string too short")
 							
-			# 4. MANAGE MESSAGES TO BE SENT VIA SERIAL.
-			if(mw.serial_message_to_send != None):
-				logging.debug("New message to be sent:")
-				logging.debug(mw.serial_message_to_send)
-				# 4.1 convert the message to bytes (default is encoded)
-				message = bytes(mw.serial_message_to_send,"utf-8")
-				self.serial_port.write(message,)						# send message
-				mw.serial_message_to_send = None						# reset message
-				logging.debug("message sent")
+			# ~ # 4. MANAGE MESSAGES TO BE SENT VIA SERIAL.
+			# ~ if(mw.serial_message_to_send != None):
+				# ~ logging.debug("New message to be sent:")
+				# ~ logging.debug(mw.serial_message_to_send)
+				# ~ # 4.1 convert the message to bytes (default is encoded)
+				# ~ message = bytes(mw.serial_message_to_send,"utf-8")
+				# ~ self.serial_port.write(message,)						# send message
+				# ~ mw.serial_message_to_send = None						# reset message
+				# ~ logging.debug("message sent")
 
-			t = time.time()
-			dt = t - t0
-			print("dt serial read: " +str(dt))
+			# ~ t = time.time()
+			# ~ dt = t - t0
+			# ~ print("dt serial read: " +str(dt))
 
-		# 5. CLOSE THE OPEN PORT. 	
+		# ~ # 5. CLOSE THE OPEN PORT. 	
 		
-		logging.debug("serial_port.is_open:")
-		logging.debug(self.serial_port.is_open)
-		logging.debug("done")
-		logging.debug(self.done)		
+		# ~ logging.debug("serial_port.is_open:")
+		# ~ logging.debug(self.serial_port.is_open)
+		# ~ logging.debug("done")
+		# ~ logging.debug(self.done)		
 			
-		mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
-		logging.debug("Thread Complete")
-		logging.debug(SEPARATOR)
+		# ~ mw.on_button_disconnect_click()									# used to reenable the serial Connect button, just in case there's a crash
+		# ~ logging.debug("Thread Complete")
+		# ~ logging.debug(SEPARATOR)
 
 
-	def serial_connect(self, port_name):
-		logging.debug("serial_connect method called")
-		logging.debug(port_name)
-		logging.debug("port name " + port_name)
+	# ~ def serial_connect(self, port_name):
+		# ~ logging.debug("serial_connect method called")
+		# ~ logging.debug(port_name)
+		# ~ logging.debug("port name " + port_name)
 
-		try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
-			self.serial_port.close()
-			logging.debug("Serial port closed")	
-			logging.debug("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
-		except:
-			logging.debug("serial port couldn't be closed")
-			logging.debug("Wasn't open, as it should always be")
+		# ~ try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
+			# ~ self.serial_port.close()
+			# ~ logging.debug("Serial port closed")	
+			# ~ logging.debug("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
+		# ~ except:
+			# ~ logging.debug("serial port couldn't be closed")
+			# ~ logging.debug("Wasn't open, as it should always be")
 
 
-		try:															# try to establish serial connection 
-			self.serial_port = serial.Serial(		# serial constructor
-				port=port_name, 
-				baudrate= mw.serial_baudrate,		
-				#baudrate = 115200,
-				#bytesize=EIGHTBITS, 
-				#parity=PARITY_NONE, 
-				#stopbits=STOPBITS_ONE, 
-				#timeout=None, 
-				timeout=3,										# we'll need a timeout just in case there's no communication
-				xonxoff=False, 
-				rtscts=False, 
-				write_timeout=None, 
-				dsrdtr=False, 
-				inter_byte_timeout=None, 
-				exclusive=None
-				)
+		# ~ try:															# try to establish serial connection 
+			# ~ self.serial_port = serial.Serial(		# serial constructor
+				# ~ port=port_name, 
+				# ~ baudrate= mw.serial_baudrate,		
+				# ~ #baudrate = 115200,
+				# ~ #bytesize=EIGHTBITS, 
+				# ~ #parity=PARITY_NONE, 
+				# ~ #stopbits=STOPBITS_ONE, 
+				# ~ #timeout=None, 
+				# ~ timeout=3,										# we'll need a timeout just in case there's no communication
+				# ~ xonxoff=False, 
+				# ~ rtscts=False, 
+				# ~ write_timeout=None, 
+				# ~ dsrdtr=False, 
+				# ~ inter_byte_timeout=None, 
+				# ~ exclusive=None
+				# ~ )
 			
-		except Exception as e:								# both port open, and somebody else blocking the port are IO errors.
-			logging.debug("ERROR OPENING SERIAL PORT")
-			desc = str(e)
-			logging.debug(type(e))
-			logging.debug(desc)
-			i = desc.find("Port is already open.")
-			if(i != -1):
-				print("PORT ALREADY OPEN BY THIS APPLICATION")
-			logging.debug(i)
+		# ~ except Exception as e:								# both port open, and somebody else blocking the port are IO errors.
+			# ~ logging.debug("ERROR OPENING SERIAL PORT")
+			# ~ desc = str(e)
+			# ~ logging.debug(type(e))
+			# ~ logging.debug(desc)
+			# ~ i = desc.find("Port is already open.")
+			# ~ if(i != -1):
+				# ~ print("PORT ALREADY OPEN BY THIS APPLICATION")
+			# ~ logging.debug(i)
 			
-			i = desc.find("FileNotFoundError")
-			if(i != -1):
-				logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
-				mw.on_port_error(2)										# 
+			# ~ i = desc.find("FileNotFoundError")
+			# ~ if(i != -1):
+				# ~ logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
+				# ~ mw.on_port_error(2)										# 
 					
-			i = desc.find("PermissionError")
-			if(i != -1):
-				logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
-				mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+			# ~ i = desc.find("PermissionError")
+			# ~ if(i != -1):
+				# ~ logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
+				# ~ mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
 			
-			i = desc.find("OSError")
-			if(i != -1):
-				logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")	
-				mw.on_port_error(4)
+			# ~ i = desc.find("OSError")
+			# ~ if(i != -1):
+				# ~ logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")	
+				# ~ mw.on_port_error(4)
 				
 				
 					
-		except:
-			logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
+		# ~ except:
+			# ~ logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
 
-		else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
-			logging.debug("SERIAL CONNECTION SUCCESFUL !")
-			# here we should also add going  to the "DISCONNECT" state.
+		# ~ else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
+			# ~ logging.debug("SERIAL CONNECTION SUCCESFUL !")
+			# ~ # here we should also add going  to the "DISCONNECT" state.
 			
-		logging.debug("serial_port.is_open:")
-		logging.debug(self.serial_port.is_open)
-		logging.debug("done: ")
-		logging.debug(self.done)			
+		# ~ logging.debug("serial_port.is_open:")
+		# ~ logging.debug(self.serial_port.is_open)
+		# ~ logging.debug("done: ")
+		# ~ logging.debug(self.done)			
 
 
-	def add_arduino_data(self,readed):
+	# ~ def add_arduino_data(self,readed):
 		
-		# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).########################
+		# ~ # 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).########################
 	
-		vals = readed.replace(' ',',')									# replace empty spaces for commas. 
-		vals = vals.split(',')											# arduino serial plotter splits with both characters.
+		# ~ vals = readed.replace(' ',',')									# replace empty spaces for commas. 
+		# ~ vals = vals.split(',')											# arduino serial plotter splits with both characters.
 
-		valsf = []
+		# ~ valsf = []
 		
-		mw.plot_frame.n_plots = 5
+		# ~ mw.plot_frame.n_plots = 5
 	
-		if(vals[0] == ''):												# this means timeout
-			self.timeouts = self.timeouts + 1
-			print("Timeout")
-			print("Total number of timeouts: "+ str(self.timeouts))
-		else:	
-			try:
-				for val in vals:
-					valsf.append(float(val))
-			except:
-				logging.debug("It contains also text");
-				# add to a captions vector
-				text_vals = vals
-				print(text_vals)
+		# ~ if(vals[0] == ''):												# this means timeout
+			# ~ self.timeouts = self.timeouts + 1
+			# ~ print("Timeout")
+			# ~ print("Total number of timeouts: "+ str(self.timeouts))
+		# ~ else:	
+			# ~ try:
+				# ~ for val in vals:
+					# ~ valsf.append(float(val))
+			# ~ except:
+				# ~ logging.debug("It contains also text");
+				# ~ # add to a captions vector
+				# ~ text_vals = vals
+				# ~ print(text_vals)
 				
 	 
-			for i in range(len(valsf)):									# this may not be the greatest option.
-				#for j in range(1):										# to make the plot squareish
-				mw.plot_frame.dataset[i].append(valsf[i])
+			# ~ for i in range(len(valsf)):									# this may not be the greatest option.
+				# ~ #for j in range(1):										# to make the plot squareish
+				# ~ mw.plot_frame.dataset[i].append(valsf[i])
 				
-			mw.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
+			# ~ mw.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
 
 
-			##################################################################################################################		
+			# ~ ##################################################################################################################		
 
-class WorkerSignals_serialport(QObject):
-	port_error_other = pyqtSignal(str)
+# ~ class WorkerSignals_serialport(QObject):
+	# ~ port_error_other = pyqtSignal(str)
 		
 # MAIN WINDOW #			
 
@@ -352,10 +352,11 @@ class MainWindow(QMainWindow):
 			str(self.threadpool.maxThreadCount())
 		)
 		
-		# timers #														# AT LEAST ONE TO UPDATE THE PLOT !!!
-		self.internal_tasks_timer = QTimer()							# used for nasty stuff
-		self.internal_tasks_timer.timeout.connect(self.handle_port_errors)	# regularly check if the serial error flag is set
-		self.internal_tasks_timer.start(50)								
+		
+		# ~ # timers #														# AT LEAST ONE TO UPDATE THE PLOT !!!
+		# ~ self.internal_tasks_timer = QTimer()							# used for nasty stuff
+		# ~ self.internal_tasks_timer.timeout.connect(self.handle_port_errors)	# regularly check if the serial error flag is set
+		# ~ self.internal_tasks_timer.start(50)								
 		
 		# timer to record data onto file periodically #
 		self.record_timer = QTimer()
@@ -682,17 +683,17 @@ class MainWindow(QMainWindow):
 			i = desc.find("FileNotFoundError")
 			if(i != -1):
 				logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
-				mw.on_port_error(2)										# 
+				self.on_port_error(2)										# 
 					
 			i = desc.find("PermissionError")
 			if(i != -1):
 				logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
-				mw.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+				self.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
 			
 			i = desc.find("OSError")
 			if(i != -1):
 				logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")	
-				mw.on_port_error(4)
+				self.on_port_error(4)
 				
 				
 					
@@ -957,9 +958,10 @@ class MainWindow(QMainWindow):
 		
 		self.error_type = error_type
 		
-		logging.debug("Error on serial port opening detected: ")
-		logging.debug(self.error_type)
+		# ~ logging.debug("Error on serial port opening detected: ")
+		# ~ logging.debug(self.error_type)
 		self.handle_errors_flag = True									# more global variables to fuck things up even more. 
+		self.handle_port_errors()
 		
 	def handle_port_errors(self):										# made a trick, port_errors is a class variable (yup, dirty as fuck !!!)
 		
