@@ -282,14 +282,14 @@ class Worker_serialport(QRunnable):
 		
 		# 2. perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).########################
 	
-		vals = readed.replace(' ',',')								# replace empty spaces for commas. 
-		vals = vals.split(',')										# arduino serial plotter splits with both characters.
+		vals = readed.replace(' ',',')									# replace empty spaces for commas. 
+		vals = vals.split(',')											# arduino serial plotter splits with both characters.
 
 		valsf = []
 		
 		mw.plot_frame.n_plots = 5
 	
-		if(vals[0] == ''):
+		if(vals[0] == ''):												# this means timeout
 			self.timeouts = self.timeouts + 1
 			print("Timeout")
 			print("Total number of timeouts: "+ str(self.timeouts))
@@ -301,23 +301,9 @@ class Worker_serialport(QRunnable):
 				logging.debug("It contains also text");
 				# add to a captions vector
 				text_vals = vals
+				print(text_vals)
 				
-		
-			# ~ print("len(dataset: )")	
-			# ~ print(len(mw.plot_frame.dataset))
-			# ~ print("mw.plot_frame.dataset: ")
-			# ~ print(mw.plot_frame.dataset)
-			# ~ print("valsf:")
-			# ~ print(valsf)
-			
-			# ~ print("Dataset:")
-			# ~ print(mw.plot_frame.dataset)
-			
-			# as it is now, the dataset is dimensioned to MAX_PLOTS once created, so this will never happen
-			# ~ if((mw.plot_frame.dataset == []) and (valsf != [])):		# if the dataset is empty (a dataset reset function may  be useful)
-				# ~ for val in valsf:
-					# ~ mw.plot_frame.dataset.append([])
-			# ~ else:													# if already data, we append to each sub array. 
+	 
 			for i in range(len(valsf)):									# this may not be the greatest option.
 				#for j in range(1):										# to make the plot squareish
 				mw.plot_frame.dataset[i].append(valsf[i])
@@ -445,11 +431,15 @@ class MainWindow(QMainWindow):
 								max_points = 2000)						# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = 2000								# width of the plot in points
 		self.layout_plot.addWidget(self.plot_frame)
+		# channel select checkboxes #
 		self.layout_channel_select = QVBoxLayout()
 		self.layout_plot.addLayout(self.layout_channel_select)
-		for i in range(1, my_graph.MAX_PLOTS+1):
-			cb = QCheckBox("CHANNEL " + str(i))
-			self.layout_channel_select.addWidget(cb)
+		# ~ for i in range(1, my_graph.MAX_PLOTS+1):
+			# ~ cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
+			# ~ cb.setChecked(True)											# enabled by default
+			# ~ self.layout_channel_select.addWidget(cb)
+		self.channel_label = QLabel("Channels:")
+		self.layout_channel_select.addWidget(self.channel_label)
 		
 		
 		
@@ -739,10 +729,13 @@ class MainWindow(QMainWindow):
 		self.combo_endline_params.setEnabled(True)
 		self.textbox_send_command.setEnabled(False)
 		self.status_bar.showMessage("Disconnected")						# showing sth is happening. 
-		# ~ self.worker_serialport.done = True								# finishes the thread execution
-		# ~ self.worker_serialport.serial_port.close()						# quite clear
+		# ~ self.worker_serialport.done = True							# finishes the thread execution
+		# ~ self.worker_serialport.serial_port.close()					# quite clear
+		self.plot_frame.clear_plot()									# clear plot
+		self.dataset = []												# clear dataset
 		self.serial_port.close()
 		self.serial_timer.stop()
+		#self.plot_frame.plot_timer.stop()
 
 	def on_button_pause(self):
 		# pause the plot:
@@ -857,14 +850,14 @@ class MainWindow(QMainWindow):
 		#while(keep_reading == 1):	
 		byte_buffer = self.serial_port.read(5000)		# up to 1000 or as much as in buffer.
 		mid_buffer = byte_buffer.decode('utf-8')
-		print("mid_buffer:")
-		print(mid_buffer)
+		# ~ print("mid_buffer:")
+		# ~ print(mid_buffer)
 		self.read_buffer = self.read_buffer + mid_buffer
-		print("self.read_buffer:")
-		print(self.read_buffer)
+		# ~ print("self.read_buffer:")
+		# ~ print(self.read_buffer)
 		
 		data_points = self.read_buffer.split(self.endline)
-		print(data_points)
+		# ~ print(data_points)
 		
 		self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
 		a = data_points[:-1]
@@ -881,7 +874,7 @@ class MainWindow(QMainWindow):
 
 		elif(byte_buffer[-1] == b''):
 			keep_reading = 0;										# we have new data, but we finished the buffer.
-			print(byte_buffer)
+			# ~ print(byte_buffer)
 		
 		
 		# ~ while(keep_reading == 1):	
