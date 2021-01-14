@@ -36,7 +36,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			
 	n_plots = 12														# number of plots on the current plot. 
 	first = True														# first iteration only creating the plots
-	plot_tick_ms = 200													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
+	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	
 	
 	#dataset = []														# complete dataset, this should go to a file.							
@@ -75,49 +75,50 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
 		#self.enableAutoRange(axis='y', enable = True)
 		legend = self.addLegend()
+		# self.setTitle("PENIS")
 		
 			
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
 		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
 
-	
-	def on_plot_timer(self):
-		
-		t0 = time.time()
-			
-		if self.first == True:
-			# FIRST: CREATE THE PLOTS 
-		
-			for i in range (len(self.plot_subset)):
-				logging.debug("val of i:" + str(i))
-				#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
-				p = self.plot(pen = (COLORS[i%24]),name ="Plot" + str(i))
 
-				self.plot_refs.append(p)
+	def create_plots(self):
+		for i in range (len(self.plot_subset)):
+			logging.debug("val of i:" + str(i))
+			#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
+			#p = self.plot(pen = (COLORS[i%24]),name ="Plot" + str(i))
+			p = self.plot(pen = (COLORS[i%24]))
+			self.plot_refs.append(p)
 
 			self.first = False
+
+	def clear_plot(self):												# NOT WORKING 
+		print("clear_plot method called")
+		for i in range(len(self.plot_subset)-1):
+			self.plot_refs[i].clear()
+			self.plot_refs[i].setData([0])
+			self.plot_subset[i] = []
+			
+	
+	def on_plot_timer(self):
+
+		if self.first == True:											# FIRST: CREATE THE PLOTS 
+			self.create_plots()	
 		# SECOND: UPDATE THE PLOTS:
 		
 		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
 
 			self.dataset_changed = False
 			for i in range(len(self.plot_subset)):
-				 self.plot_refs[i].setData(self.plot_subset[i]) 			# required for update: reassign references to the plots
-				# self.plot_refs[i].setData(self.t, self.plot_subset[i]) 			# required for update: reassign references to the plots
-				
-				
-						
+				 self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
+				# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
+									
 			for i in range(0,self.n_plots):		
 				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
 			
 			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
 		
-				
-		t = time.time()
-		dt = t - t0
-		print("execution time on_plot_timer: " + str(dt))		
-
 
 
 ## THIS PART WON'T BE EXECUTED WHEN IMPORTED AS A SUBMODULE, BUT ONLY WHEN TESTED INDEPENDENTLY ##
@@ -138,7 +139,7 @@ if __name__ == "__main__":
 			super().__init__()
 
 			# initializing empty dataset #
-			for i in range(MAX_PLOTS):									# we're creating a dataset with an escess of rows!!!
+			for i in range(MAX_PLOTS):									# we're creating a dataset with an eXcess of rows!!!
 				self.dataset.append([])	
 
 			# add graph and show #
@@ -154,27 +155,28 @@ if __name__ == "__main__":
 			# last step is showing the window #
 			self.show()
 
-		def on_data_timer(self):											# simulate data coming from external source at regular rate.
+		def on_data_timer(self):										# simulate data coming from external source at regular rate.
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.graph.dataset)))
 			
 			for i in range(0,MAX_PLOTS):
 				for j in range(50):
-					self.dataset[i].append(random.randrange(0,100))
-					
-				# THIS NEEDS TO GO TO THE MY_GRAPH !!!
-				#self.graph.plot_subset[i] = self.graph.dataset[i][-self.graph.max_points:]	# gets the last "max_points" of the dataset.
-
+					self.dataset[i].append(random.randrange(0,100))				
 				
-				
-			self.graph.dataset_changed = True		# replace this for an update method call which changes a flag?
+			self.graph.dataset_changed = True							# replace this for an update method call which changes a flag?
 			t = time.time()
 			dt = t - t0
 			logging.debug("execution time add_stuff_dataset " + str(dt))
+
+			try:
+				self.graph.clear_plot()
+			except:
+				print("issue cleaning plot")
+	
 			
 
 	app = QApplication([])
-	app.setStyle("Fusion")													# required to use it here
+	app.setStyle("Fusion")												# required to use it here
 	mw = MainWindow()
 	app.exec_()
 

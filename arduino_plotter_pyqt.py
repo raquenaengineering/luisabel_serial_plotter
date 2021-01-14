@@ -588,7 +588,14 @@ class MainWindow(QMainWindow):
 	def on_record_timer(self):
 		print("on_record_timer method called:")	
 		print("saving data to file")
+		# ~ print("Dataset:")
+		# ~ print(self.dataset)		
 		self.log_file.write(str(self.dataset))
+		self.clear_dataset()											# so we stop keeping track of all this data !!
+		print("Dataset:")
+		print(self.dataset)
+		print("PlotFrame Dataset")
+		#print(self.plot_frame.dataset)		
 	
 	def on_serial_timer(self):
 		keep_reading = 1												# flag to stop reading
@@ -658,6 +665,7 @@ class MainWindow(QMainWindow):
 	
 	def clear_dataset(self):
 		# initializing empty dataset #
+		self.dataset = []
 		for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an escess of rows!!!
 			self.dataset.append([])		
 	
