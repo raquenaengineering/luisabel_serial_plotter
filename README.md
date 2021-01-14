@@ -3,12 +3,12 @@ Plotting tool based on the arduino plotter using python and Qt, with extended fu
 
 ## Dependencies 
 
-+Pyserial:
++ Pyserial:
 pip install pyserial
-PyQt5:
-+pip install PyQt5
-+numpy:
++ PyQt5:
+pip install PyQt5
++ numpy:
 pip install numpy
-+pyqtgraph:
++ pyqtgraph:
 pip install pyqtgraph
 
