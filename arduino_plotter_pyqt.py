@@ -180,10 +180,12 @@ class MainWindow(QMainWindow):
 		self.light_theme_option.triggered.connect(self.set_light_theme)
 		self.re_theme_option = self.theme_submenu.addAction("Raquena")
 		self.re_theme_option.triggered.connect(self.set_re_theme)
+		# shortcuts #
+		self.shortcuts_action = self.file_menu.addAction("Shortcuts")
+		self.shortcuts_action.triggered.connect(self.shortcut_preferences)
 		# about #
 		help_menu = menu.addMenu("&Help")
 		about_menu = help_menu.addAction("About")
-		
 		
 		button_action = QAction()
 		self.file_menu.addAction(button_action)
@@ -408,6 +410,8 @@ class MainWindow(QMainWindow):
 		self.textbox_send_command.setEnabled(True)
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
+		self.plot_frame.plot_timer.start()								# this should happen inside my_graph
+
 
 	def serial_connect(self, port_name):
 		logging.debug("serial_connect method called")
@@ -424,7 +428,7 @@ class MainWindow(QMainWindow):
 
 
 		try:															# try to establish serial connection 
-			self.serial_port = serial.Serial(		# serial constructor
+			self.serial_port = serial.Serial(							# serial constructor
 				port=port_name, 
 				baudrate= mw.serial_baudrate,		
 				#baudrate = 115200,
@@ -441,7 +445,7 @@ class MainWindow(QMainWindow):
 				exclusive=None
 				)
 			
-		except Exception as e:								# both port open, and somebody else blocking the port are IO errors.
+		except Exception as e:											# both port open, and somebody else blocking the port are IO errors.
 			logging.debug("ERROR OPENING SERIAL PORT")
 			desc = str(e)
 			logging.debug(type(e))
@@ -459,7 +463,7 @@ class MainWindow(QMainWindow):
 			i = desc.find("PermissionError")
 			if(i != -1):
 				logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
-				self.on_port_error(3)										# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+				self.on_port_error(3)									# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
 			
 			i = desc.find("OSError")
 			if(i != -1):
@@ -501,13 +505,11 @@ class MainWindow(QMainWindow):
 		self.combo_endline_params.setEnabled(True)
 		self.textbox_send_command.setEnabled(False)
 		self.status_bar.showMessage("Disconnected")						# showing sth is happening. 
-		# ~ self.worker_serialport.done = True							# finishes the thread execution
-		# ~ self.worker_serialport.serial_port.close()					# quite clear
 		self.plot_frame.clear_plot()									# clear plot
 		self.clear_dataset()
 		self.serial_port.close()
 		self.serial_timer.stop()
-		#self.plot_frame.plot_timer.stop()
+		self.plot_frame.plot_timer.stop()
 
 	def on_button_pause(self):
 		# pause the plot:
@@ -528,7 +530,7 @@ class MainWindow(QMainWindow):
 	def on_button_record(self):
 		print("on_button_record method: ")
 		self.record_timer.start()	
-		self.log_file = open(self.log_file_name,'w')	# prepare the file to write THIS SHOULDN'T BE HERE
+		self.log_file = open(self.log_file_name,'w')					# prepare the file to write THIS SHOULDN'T BE HERE
 		self.button_record.setEnabled(False)
 		self.button_stop.setEnabled(True)
 
@@ -604,7 +606,7 @@ class MainWindow(QMainWindow):
 
 		print("on_serial_timer method: ")
 		#while(keep_reading == 1):	
-		byte_buffer = self.serial_port.read(5000)		# up to 1000 or as much as in buffer.
+		byte_buffer = self.serial_port.read(5000)						# up to 1000 or as much as in buffer.
 		mid_buffer = byte_buffer.decode('utf-8')
 		# ~ print("mid_buffer:")
 		# ~ print(mid_buffer)
@@ -763,6 +765,17 @@ class MainWindow(QMainWindow):
 		else:
 				self.noserials = serial_port_menu.addAction("No serial Ports detected")
 				self.noserials.setDisabled(True)
+
+
+	def shortcut_preferences():
+		#0. should be done on init(): Load the shortcuts from a file where they're stored ¿in json format?
+		#1. get the current shortcuts (stored somewhere in a variable, which also needs to be created(USE DICTIONARY))
+		#2. create a widget containing a table with all the shortcuts and their shortcut value. 
+		# 
+
+
+
+
 
 	def full_screen(self):												# it should be able to be detected from window class !!!
 		if self.full_screen_flag == False:								
