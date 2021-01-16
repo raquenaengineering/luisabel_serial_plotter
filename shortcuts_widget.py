@@ -14,6 +14,11 @@ from PyQt5.QtWidgets import(
 	QListWidget,
 	QPushButton,
 	QHBoxLayout,
+	QTableView,
+	QTableWidget,
+	QTableWidgetItem,
+	QAbstractItemView,
+	QAbstractScrollArea,
 
 )
 
@@ -36,8 +41,6 @@ MAX_PLOTS = 24															# Absolute maximum number of plots, change if neede
 
 class ShortcutsWidget(QWidget):												# this is supposed to be the python convention for classes. 
 	
-	# Arduino serial plotter has 500 points max. on the x axis.
-	max_points = None													# maximum points per plot
 	
 	shortcuts = []
 
@@ -49,8 +52,28 @@ class ShortcutsWidget(QWidget):												# this is supposed to be the python c
 		self.resize(800,600)										# setting initial window size
 		self.layout = QVBoxLayout()
 		self.setLayout(self.layout)	
+		# list # (remove when table well implemented)
 		self.shortcuts_list = QListWidget()								# maybe move to a table (fixed left, editable right)
-		self.layout.addWidget(self.shortcuts_list)
+		#self.layout.addWidget(self.shortcuts_list)
+		# table#
+		self.shortcuts_table = QTableWidget()
+		self.layout.addWidget(self.shortcuts_table)
+		self.shortcuts_table.setShowGrid(False)
+		self.shortcuts_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+		self.shortcuts_table.verticalHeader().setVisible(False);
+		self.shortcuts_table.setSizeAdjustPolicy(
+        QAbstractScrollArea.AdjustToContents)
+		header = self.shortcuts_table.horizontalHeader()
+		self.shortcuts_table.resizeColumnsToContents()
+		#header.setFrameStyle(QFrame.Box | QFrame.Plain)
+		header.setLineWidth(1)
+		self.shortcuts_table.setHorizontalHeader(header)
+		
+		# filling table #
+		self.load_shortcuts()
+		self.fill_shortcuts_table()
+
+		# buttons #
 		self.buttons_layout = QHBoxLayout()
 		self.layout.addLayout(self.buttons_layout)
 		self.load_button = QPushButton("Load")
@@ -69,14 +92,15 @@ class ShortcutsWidget(QWidget):												# this is supposed to be the python c
 
 	def load_shortcuts(self):
 		print("load_shortcuts method called:")
-		self.shortcuts_list.clear()										# start from clean table every time.
+		# ~ # should open a popup window to select the file #
 		with open("shortcuts.txt") as sc_file:
-			vals = sc_file.readlines()
+			vals = sc_file.read().splitlines()
 			print(vals)
 			#vals = vals.splitlines()
-			self.shortcuts_list.addItems(vals)
-			for i in range(0,20):
-				self.shortcuts_list.addItems([["21","22","23"],["21","21","21"]])
+			for line in vals:
+				self.shortcuts.append(line)
+			#print(self.shortcuts)
+
 
 	def save_shortcuts(self):											# NOT WORKING 
 		print("save_shortcuts method called:")
@@ -84,6 +108,22 @@ class ShortcutsWidget(QWidget):												# this is supposed to be the python c
 
 	def default_shortcuts(self):											# NOT WORKING 
 		print("default_shortcuts method called:")
+		# how to set the defaults ??
+		# 1. hard coded onto the main window.
+			# advantages: no way the user can screw it up, disadvantages: code dirtier, difficult to maintain?
+		# 2. readed from configuration file which is also python-like interpretable. 
+			# advantages: is already code, disadvantages: not standard.
+		# 3. readed from a configuration file with exactly the same format as the used shortcuts file
+			
+			
+	def fill_shortcuts_table(self):
+		# for now use internal shortcuts, maybe better to give the shortcuts table as an input parameter. 
+		#self.shortcuts_table.setModel(self.shortcuts)
+		self.shortcuts_table.setRowCount(len(self.shortcuts))
+		self.shortcuts_table.setColumnCount(2)
+		for i in range(0,len(self.shortcuts)):
+			self.shortcuts_table.setItem(i,0,QTableWidgetItem(self.shortcuts[i]))
+		
 
 
 ## THIS PART WON'T BE EXECUTED WHEN IMPORTED AS A SUBMODULE, BUT ONLY WHEN TESTED INDEPENDENTLY ##

@@ -15,9 +15,12 @@ logging.basicConfig(level = logging.WARNING)
 
 # custom packages #
 
+import qtwidgets
+
 import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
 from my_graph import MyGraph						# custom graph based om pyqtgraph, as a module with its own tests.
 import my_graph										# for the global variables of the namespace.
+from shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
 
 
 # qt imports #
@@ -181,7 +184,7 @@ class MainWindow(QMainWindow):
 		self.re_theme_option = self.theme_submenu.addAction("Raquena")
 		self.re_theme_option.triggered.connect(self.set_re_theme)
 		# shortcuts #
-		self.shortcuts_action = self.file_menu.addAction("Shortcuts")
+		self.shortcuts_action = self.preferences_menu.addAction("Shortcuts")
 		self.shortcuts_action.triggered.connect(self.shortcut_preferences)
 		# about #
 		help_menu = menu.addMenu("&Help")
@@ -209,10 +212,11 @@ class MainWindow(QMainWindow):
 		# channel select checkboxes #
 		self.layout_channel_select = QVBoxLayout()
 		self.layout_plot.addLayout(self.layout_channel_select)
-		# ~ for i in range(1, my_graph.MAX_PLOTS+1):
-			# ~ cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
-			# ~ cb.setChecked(True)											# enabled by default
-			# ~ self.layout_channel_select.addWidget(cb)
+		for i in range(1, my_graph.MAX_PLOTS+1):
+			#cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
+			cb = qtwidgets.AnimatedToggle()
+			cb.setChecked(True)											# enabled by default
+			self.layout_channel_select.addWidget(cb)
 		self.channel_label = QLabel("Channels:")
 		self.layout_channel_select.addWidget(self.channel_label)
 				
@@ -767,7 +771,8 @@ class MainWindow(QMainWindow):
 				self.noserials.setDisabled(True)
 
 
-	def shortcut_preferences():
+	def shortcut_preferences(self):
+		self.shortcuts = ShortcutsWidget()							# needs to be self, or it won't persist
 		#0. should be done on init(): Load the shortcuts from a file where they're stored ¿in json format?
 		#1. get the current shortcuts (stored somewhere in a variable, which also needs to be created(USE DICTIONARY))
 		#2. create a widget containing a table with all the shortcuts and their shortcut value. 
