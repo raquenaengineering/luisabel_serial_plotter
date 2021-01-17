@@ -451,30 +451,7 @@ class MainWindow(QMainWindow):
 			
 		except Exception as e:											# both port open, and somebody else blocking the port are IO errors.
 			logging.debug("ERROR OPENING SERIAL PORT")
-			desc = str(e)
-			logging.debug(type(e))
-			logging.debug(desc)
-			i = desc.find("Port is already open.")
-			if(i != -1):
-				print("PORT ALREADY OPEN BY THIS APPLICATION")
-			logging.debug(i)
-			
-			i = desc.find("FileNotFoundError")
-			if(i != -1):
-				logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
-				self.on_port_error(2)										# 
-					
-			i = desc.find("PermissionError")
-			if(i != -1):
-				logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
-				self.on_port_error(3)									# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
-			
-			i = desc.find("OSError")
-			if(i != -1):
-				logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")	
-				self.on_port_error(4)
-				
-				
+			self.on_port_error(e)
 					
 		except:
 			logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
@@ -610,33 +587,38 @@ class MainWindow(QMainWindow):
 
 		print("on_serial_timer method: ")
 		#while(keep_reading == 1):	
-		byte_buffer = self.serial_port.read(5000)						# up to 1000 or as much as in buffer.
-		mid_buffer = byte_buffer.decode('utf-8')
-		# ~ print("mid_buffer:")
-		# ~ print(mid_buffer)
-		self.read_buffer = self.read_buffer + mid_buffer
-		# ~ print("self.read_buffer:")
-		# ~ print(self.read_buffer)
-		
-		data_points = self.read_buffer.split(self.endline)
-		# ~ print(data_points)
-		
-		self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
-		a = data_points[:-1]
-		for data_point in a:										# so all data points except last. 
-			self.add_arduino_data(data_point)
-								
-		if(mid_buffer == ''):
-			print("mid Buffer Empty")
-			keep_reading = 0;
+		try:
+			byte_buffer = self.serial_port.read(50)					# up to 1000 or as much as in buffer.
+		except Exception as e:
+			self.on_port_error(e)
+			self.on_button_disconnect_click()									# we've crashed the serial, so disconnect and REFRESH PORTS!!!
+		else:															# if except doens't happen	
+			mid_buffer = byte_buffer.decode('utf-8')
+			# ~ print("mid_buffer:")
+			# ~ print(mid_buffer)
+			self.read_buffer = self.read_buffer + mid_buffer
+			# ~ print("self.read_buffer:")
+			# ~ print(self.read_buffer)
+			
+			data_points = self.read_buffer.split(self.endline)
+			# ~ print(data_points)
+			
+			self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
+			a = data_points[:-1]
+			for data_point in a:										# so all data points except last. 
+				self.add_arduino_data(data_point)
+									
+			if(mid_buffer == ''):
+				print("mid Buffer Empty")
+				keep_reading = 0;
 
-		# ~ if(byte_buffer == b''):										# if last char is EOF, then we return.
-			# ~ keep_reading = 0;										# buffer was empty, nothing to send
-			# ~ print("Empty Buffer")							
+			# ~ if(byte_buffer == b''):										# if last char is EOF, then we return.
+				# ~ keep_reading = 0;										# buffer was empty, nothing to send
+				# ~ print("Empty Buffer")							
 
-		elif(byte_buffer[-1] == b''):
-			keep_reading = 0;										# we have new data, but we finished the buffer.
-			# ~ print(byte_buffer)
+			elif(byte_buffer[-1] == b''):
+				keep_reading = 0;										# we have new data, but we finished the buffer.
+				# ~ print(byte_buffer)
 						
 	def add_arduino_data(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
 
@@ -676,8 +658,36 @@ class MainWindow(QMainWindow):
 			self.dataset.append([])		
 	
 			
-	def on_port_error(self,error_type):									# triggered by the serial thread, shows a window saying port is used by sb else.
+	def on_port_error(self,e):									# triggered by the serial thread, shows a window saying port is used by sb else.
+
+		desc = str(e)
+		logging.debug(type(e))
+		logging.debug(desc)
+		i = desc.find("Port is already open.")
+		if(i != -1):
+			print("PORT ALREADY OPEN BY THIS APPLICATION")
+			error_type = 1
+			logging.debug(i)
 		
+		i = desc.find("FileNotFoundError")
+		if(i != -1):
+			logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
+			error_type = 2										# 
+		i = desc.find("PermissionError")
+		if(i != -1):
+			logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
+			error_type = 3									# shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+		
+		i = desc.find("OSError")
+		if(i != -1):
+			logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")	
+			error_type = 4
+			
+		i = desc.find("ClearCommError")
+		if(i != -1):
+			logging.debug("DEVICE CABLE UNGRACEFULLY DISCONNECTED")	
+			error_type = 5
+
 		self.error_type = error_type
 		
 		# ~ logging.debug("Error on serial port opening detected: ")
@@ -720,7 +730,20 @@ class MainWindow(QMainWindow):
 				"Serial Device Unreachable",
 				"Serial device couldn't be reached,\n Bluetooth device too far? ",
 				buttons=QMessageBox.Ok
-			)		
+			)
+
+			self.on_button_disconnect_click()							# resetting to the default "waiting for connect" situation
+			self.handle_errors_flag = False		
+		if(self.error_type == 5):										# this means device not connected
+			logging.warning("ERROR TYPE 5")
+			d = QMessageBox.critical(
+				self,
+				"Serial Cable disconnected while transmitting",
+				"Serial device was ungracefully disconnected, please check the cables",
+				buttons=QMessageBox.Ok
+			)
+			self.error_type = None
+					
 		self.error_type = None											# cleaning unhnandled errors flags. 
 
 	# check all themes and use lambda functions may be an option to use more themes #
