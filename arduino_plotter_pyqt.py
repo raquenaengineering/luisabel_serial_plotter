@@ -116,6 +116,8 @@ ENDLINE_OPTIONS = [
 "Both NL & CR"
 ]
 
+RECORD_PERIOD = 10000													# time in ms between two savings of the recorded data onto file
+
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -149,7 +151,7 @@ class MainWindow(QMainWindow):
 		# timer to record data onto file periodically #
 		self.record_timer = QTimer()
 		self.record_timer.timeout.connect(self.on_record_timer)			# will be enabled / disabled via button
-		self.record_timer.start(1000)									# deploys data onto file once a second
+		self.record_timer.start(RECORD_PERIOD)							# deploys data onto file once a second
 		self.record_timer.stop()
 
 		self.serial_timer = QTimer()									# we'll use timer instead of thread
@@ -493,7 +495,8 @@ class MainWindow(QMainWindow):
 		self.serial_port.close()
 		self.serial_timer.stop()
 		self.plot_frame.plot_timer.stop()
-		#self.on_record_timer()											# this should save what's left to the file and clear the dataset
+		self.on_record_timer()											# this should save what's left to the file and clear the dataset
+		self.on_button_stop()											# and this should disable the recording, if we disconnect the serial port
 		print(SEPARATOR)
 
 
@@ -577,21 +580,22 @@ class MainWindow(QMainWindow):
 	def on_record_timer(self):
 		print("on_record_timer method called:")	
 		print("saving data to file")
-		
+		t0 = time.time()
 		with open(self.log_file_name, mode = 'w') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
 			dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
-			dataset_writer.writerow(self.dataset)
-		
+			for variable in self.dataset:
+				dataset_writer.writerow(variable)
+		t = time.time()
+		dt = t-t0
+		print(dt)
+		print(SEPARATOR)
 		
 		# ~ print("Dataset:")
 		# ~ print(self.dataset)		
 		#self.log_file.write(str(self.dataset))
 		self.clear_dataset()											# so we stop keeping track of all this data !!
 		self.dataset = self.plot_frame.dataset							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
-		print("Dataset:")
-		print(self.dataset)
-		print("PlotFrame Dataset")
-		#print(self.plot_frame.dataset)		
+	
 	
 	def on_serial_timer(self):
 		keep_reading = 1												# flag to stop reading
@@ -673,17 +677,17 @@ class MainWindow(QMainWindow):
 	def clear_dataset(self):
 		# initializing empty dataset #
 		
-		print("dataset before clear:")
-		for i in range(len(self.dataset)):
-			print(self.dataset[i])
+		# ~ print("dataset before clear:")
+		# ~ for i in range(len(self.dataset)):
+			# ~ print(self.dataset[i])
 		
 		
 		self.dataset = []
 		for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an escess of rows!!!
 			self.dataset.append([])	
-		print("dataset after clear:")
-		for i in range(len(self.dataset)):
-			print(self.dataset[i])
+		# ~ print("dataset after clear:")
+		# ~ for i in range(len(self.dataset)):
+			# ~ print(self.dataset[i])
 						
 	def on_port_error(self,e):									# triggered by the serial thread, shows a window saying port is used by sb else.
 
@@ -877,8 +881,10 @@ class MainWindow(QMainWindow):
 				self.update_serial_ports()
 			elif event.text() == 'p':
 				self.on_button_pause()
-			elif event.text() == 'r':
+			elif event.text() == 'y':
 				self.on_button_play()
+			elif event.text() == 'r':
+				self.on_button_record()				
 				
 										
 
