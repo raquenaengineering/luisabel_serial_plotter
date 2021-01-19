@@ -217,9 +217,12 @@ class MainWindow(QMainWindow):
 		self.layout_plot.addLayout(self.layout_channel_select)
 		self.channel_label = QLabel("Channels:")
 		self.layout_channel_select.addWidget(self.channel_label)
-		for i in range(1, my_graph.MAX_PLOTS+1):
+		for i in range(0, my_graph.MAX_PLOTS):
 			#cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
-			cb = qtwidgets.AnimatedToggle()
+			color = "#"+my_graph.COLORS[i]
+			print(color)
+			cb = qtwidgets.AnimatedToggle(checked_color = color)
+			#cb = qtwidgets.AnimatedToggle(checked_color = "#00ff00")
 			cb.setChecked(True)											# enabled by default
 			self.layout_channel_select.addWidget(cb)
 
@@ -581,7 +584,7 @@ class MainWindow(QMainWindow):
 		print("on_record_timer method called:")	
 		print("saving data to file")
 		t0 = time.time()
-		with open(self.log_file_name, mode = 'w') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
+		with open(self.log_file_name, mode = 'w', newline = '') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
 			dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
 			for variable in self.dataset:
 				dataset_writer.writerow(variable)
