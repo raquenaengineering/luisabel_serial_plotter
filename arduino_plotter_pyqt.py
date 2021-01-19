@@ -7,6 +7,7 @@ import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
 
 
+import csv
 import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
@@ -133,7 +134,7 @@ class MainWindow(QMainWindow):
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
 	full_screen_flag = False
 	dataset = []  
-	log_file_name = "log_file.txt"										# at some point, path needs to be selected by user. 
+	log_file_name = "log_file.csv"										# at some point, path needs to be selected by user. 
 	timeouts = 0
 	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
 
@@ -206,19 +207,20 @@ class MainWindow(QMainWindow):
 		self.layout_plot = QHBoxLayout()								# plot plus buttons to enable/disable graphs
 		self.layoutV1.addLayout(self.layout_plot)
 		self.plot_frame = MyGraph(dataset = self.dataset, 
-								max_points = 2000)						# we'll use a custom class, so we can modify the defaults via class definition
-		self.plot_frame.max_points = 2000								# width of the plot in points
+									max_points = 5000)					# we'll use a custom class, so we can modify the defaults via class definition
+		self.plot_frame.max_points = 5000								# width of the plot in points, doesn't work !!!
 		self.layout_plot.addWidget(self.plot_frame)
 		# channel select checkboxes #
 		self.layout_channel_select = QVBoxLayout()
 		self.layout_plot.addLayout(self.layout_channel_select)
+		self.channel_label = QLabel("Channels:")
+		self.layout_channel_select.addWidget(self.channel_label)
 		for i in range(1, my_graph.MAX_PLOTS+1):
 			#cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
 			cb = qtwidgets.AnimatedToggle()
 			cb.setChecked(True)											# enabled by default
 			self.layout_channel_select.addWidget(cb)
-		self.channel_label = QLabel("Channels:")
-		self.layout_channel_select.addWidget(self.channel_label)
+
 				
 		# buttons for plot #
 		self.layout_player = QHBoxLayout()
@@ -233,6 +235,7 @@ class MainWindow(QMainWindow):
 		self.button_pause = QPushButton("Pause")
 		self.button_pause.setIcon(QIcon('player_icons/141.png'))
 		self.button_pause.clicked.connect(self.on_button_pause)
+		self.button_pause.setEnabled(False)
 		self.layout_player.addWidget(self.button_pause)
 		# record button # 
 		self.button_record = QPushButton("Record")
@@ -412,10 +415,11 @@ class MainWindow(QMainWindow):
 		self.combo_serial_speed.setEnabled(False)
 		self.combo_endline_params.setEnabled(False)
 		self.textbox_send_command.setEnabled(True)
+		self.button_pause.setEnabled(True)
+
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
 		self.plot_frame.plot_timer.start()								# this should happen inside my_graph
-
 
 	def serial_connect(self, port_name):
 		logging.debug("serial_connect method called")
@@ -472,10 +476,7 @@ class MainWindow(QMainWindow):
 
 		# 2. move status to connected 
 		# 3. start the timer to collect the data
-		self.serial_timer.start()
-
-		# ~ self.worker_serialport = Worker_serialport()				# creates a serialport worker every time we push the button, PLEASE NOTE IT ALSO NEEDS TO BE DESTROYED!!!
-		# ~ self.threadpool.start(self.worker_serialport)					
+		self.serial_timer.start()			
 		
 	def on_button_disconnect_click(self):
 		print("Disconnect Button Clicked")
@@ -488,9 +489,14 @@ class MainWindow(QMainWindow):
 		self.status_bar.showMessage("Disconnected")						# showing sth is happening. 
 		self.plot_frame.clear_plot()									# clear plot
 		self.clear_dataset()
+		self.dataset = self.plot_frame.dataset							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 		self.serial_port.close()
 		self.serial_timer.stop()
 		self.plot_frame.plot_timer.stop()
+		#self.on_record_timer()											# this should save what's left to the file and clear the dataset
+		print(SEPARATOR)
+
+
 
 	def on_button_pause(self):
 		# pause the plot:
@@ -511,14 +517,14 @@ class MainWindow(QMainWindow):
 	def on_button_record(self):
 		print("on_button_record method: ")
 		self.record_timer.start()	
-		self.log_file = open(self.log_file_name,'w')					# prepare the file to write THIS SHOULDN'T BE HERE
+		#self.log_file = open(self.log_file_name,'w')					# prepare the file to write THIS SHOULDN'T BE HERE
 		self.button_record.setEnabled(False)
 		self.button_stop.setEnabled(True)
 
 	def on_button_stop(self):
 		print("on_button_stop method: ")
 		self.record_timer.stop()	
-		self.log_file.close()
+		#self.log_file.close()
 		self.button_stop.setEnabled(False)
 		self.button_record.setEnabled(True)
 					
@@ -571,10 +577,17 @@ class MainWindow(QMainWindow):
 	def on_record_timer(self):
 		print("on_record_timer method called:")	
 		print("saving data to file")
+		
+		with open(self.log_file_name, mode = 'w') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
+			dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
+			dataset_writer.writerow(self.dataset)
+		
+		
 		# ~ print("Dataset:")
 		# ~ print(self.dataset)		
-		self.log_file.write(str(self.dataset))
+		#self.log_file.write(str(self.dataset))
 		self.clear_dataset()											# so we stop keeping track of all this data !!
+		self.dataset = self.plot_frame.dataset							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 		print("Dataset:")
 		print(self.dataset)
 		print("PlotFrame Dataset")
@@ -588,37 +601,43 @@ class MainWindow(QMainWindow):
 		print("on_serial_timer method: ")
 		#while(keep_reading == 1):	
 		try:
-			byte_buffer = self.serial_port.read(50)					# up to 1000 or as much as in buffer.
+			byte_buffer = self.serial_port.read(5000)					# up to 1000 or as much as in buffer.
 		except Exception as e:
 			self.on_port_error(e)
 			self.on_button_disconnect_click()									# we've crashed the serial, so disconnect and REFRESH PORTS!!!
 		else:															# if except doens't happen	
-			mid_buffer = byte_buffer.decode('utf-8')
-			# ~ print("mid_buffer:")
-			# ~ print(mid_buffer)
-			self.read_buffer = self.read_buffer + mid_buffer
-			# ~ print("self.read_buffer:")
-			# ~ print(self.read_buffer)
-			
-			data_points = self.read_buffer.split(self.endline)
-			# ~ print(data_points)
-			
-			self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
-			a = data_points[:-1]
-			for data_point in a:										# so all data points except last. 
-				self.add_arduino_data(data_point)
-									
-			if(mid_buffer == ''):
-				print("mid Buffer Empty")
-				keep_reading = 0;
+			try:
+				mid_buffer = byte_buffer.decode('utf-8')
+			except Exception as e:
+				print (SEPARATOR)
+				print(e)
+				self.on_port_error(e)
+			else:
+				# ~ print("mid_buffer:")
+				# ~ print(mid_buffer)
+				self.read_buffer = self.read_buffer + mid_buffer
+				# ~ print("self.read_buffer:")
+				# ~ print(self.read_buffer)
+				
+				data_points = self.read_buffer.split(self.endline)
+				# ~ print(data_points)
+				
+				self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
+				a = data_points[:-1]
+				for data_point in a:										# so all data points except last. 
+					self.add_arduino_data(data_point)
+										
+				if(mid_buffer == ''):
+					print("mid Buffer Empty")
+					keep_reading = 0;
 
-			# ~ if(byte_buffer == b''):										# if last char is EOF, then we return.
-				# ~ keep_reading = 0;										# buffer was empty, nothing to send
-				# ~ print("Empty Buffer")							
+				# ~ if(byte_buffer == b''):										# if last char is EOF, then we return.
+					# ~ keep_reading = 0;										# buffer was empty, nothing to send
+					# ~ print("Empty Buffer")							
 
-			elif(byte_buffer[-1] == b''):
-				keep_reading = 0;										# we have new data, but we finished the buffer.
-				# ~ print(byte_buffer)
+				elif(byte_buffer[-1] == b''):
+					keep_reading = 0;										# we have new data, but we finished the buffer.
+					# ~ print(byte_buffer)
 						
 	def add_arduino_data(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
 
@@ -653,22 +672,30 @@ class MainWindow(QMainWindow):
 	
 	def clear_dataset(self):
 		# initializing empty dataset #
+		
+		print("dataset before clear:")
+		for i in range(len(self.dataset)):
+			print(self.dataset[i])
+		
+		
 		self.dataset = []
 		for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an escess of rows!!!
-			self.dataset.append([])		
-	
-			
+			self.dataset.append([])	
+		print("dataset after clear:")
+		for i in range(len(self.dataset)):
+			print(self.dataset[i])
+						
 	def on_port_error(self,e):									# triggered by the serial thread, shows a window saying port is used by sb else.
 
 		desc = str(e)
 		logging.debug(type(e))
 		logging.debug(desc)
+		#error_type = None
 		i = desc.find("Port is already open.")
 		if(i != -1):
 			print("PORT ALREADY OPEN BY THIS APPLICATION")
 			error_type = 1
-			logging.debug(i)
-		
+			logging.debug(i)	
 		i = desc.find("FileNotFoundError")
 		if(i != -1):
 			logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
@@ -687,6 +714,11 @@ class MainWindow(QMainWindow):
 		if(i != -1):
 			logging.debug("DEVICE CABLE UNGRACEFULLY DISCONNECTED")	
 			error_type = 5
+
+		# ~ i = desc.find("'utf-8' codec can't decode byte")			# NOT WORKING !!! (GIVING MORE ISSUES THAN IT SOLVED)
+		# ~ if(i != -1):
+			# ~ logging.debug("WRONG SERIAL BAUDRATE?")	
+			# ~ error_type = 6
 
 		self.error_type = error_type
 		
@@ -731,9 +763,6 @@ class MainWindow(QMainWindow):
 				"Serial device couldn't be reached,\n Bluetooth device too far? ",
 				buttons=QMessageBox.Ok
 			)
-
-			self.on_button_disconnect_click()							# resetting to the default "waiting for connect" situation
-			self.handle_errors_flag = False		
 		if(self.error_type == 5):										# this means device not connected
 			logging.warning("ERROR TYPE 5")
 			d = QMessageBox.critical(
@@ -742,8 +771,16 @@ class MainWindow(QMainWindow):
 				"Serial device was ungracefully disconnected, please check the cables",
 				buttons=QMessageBox.Ok
 			)
-			self.error_type = None
-					
+		if(self.error_type == 6):										# this means device not connected
+			logging.warning("ERROR TYPE 6")
+			d = QMessageBox.critical(
+				self,
+				"Serial wrong decoding",
+				"There are problems decoding the data\n probably due to a wrong baudrate.",
+				buttons=QMessageBox.Ok
+			)
+		self.on_button_disconnect_click()							# resetting to the default "waiting for connect" situation
+		self.handle_errors_flag = False				
 		self.error_type = None											# cleaning unhnandled errors flags. 
 
 	# check all themes and use lambda functions may be an option to use more themes #

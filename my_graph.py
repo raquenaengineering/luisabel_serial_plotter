@@ -24,7 +24,7 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 
 ]
 
-MAX_PLOTS = 24															# Absolute maximum number of plots, change if needed !!
+MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
 
 
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
@@ -81,6 +81,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
 		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
+		self.plot_timer.stop()											# will also control the refresh rate.	
 
 
 	def create_plots(self):
@@ -95,20 +96,25 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 
 	def clear_plot(self):												# NOT WORKING 
 		print("clear_plot method called")
-		for i in range(len(self.plot_subset)-1):
-			self.plot_refs[i].clear()
-			self.plot_refs[i].setData([0])
-			self.plot_subset[i] = []
+		for i in range(len(self.plot_subset)):
+			self.plot_refs[i].clear()									# clears the plot
+			self.plot_refs[i].setData([0])								# sets the data to 0, may not be necessary
+			#self.plot_subset[i] = []
 			
 	
 	def on_plot_timer(self):
+		print("more plot timers")
 
 		if self.first == True:											# FIRST: CREATE THE PLOTS 
 			self.create_plots()	
+			self.first = False
+			print("First plot timer")
 		# SECOND: UPDATE THE PLOTS:
 		
 		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
-
+			print("dataset has changed")
+			print("length of subset")
+			print(len(self.plot_subset))
 			self.dataset_changed = False
 			for i in range(len(self.plot_subset)):
 				 self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
@@ -154,24 +160,29 @@ if __name__ == "__main__":
 			self.setCentralWidget(self.graph)
 			# last step is showing the window #
 			self.show()
+			
+			self.graph.plot_timer.start()
 
+			
 		def on_data_timer(self):										# simulate data coming from external source at regular rate.
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.graph.dataset)))
 			
 			for i in range(0,MAX_PLOTS):
 				for j in range(50):
-					self.dataset[i].append(random.randrange(0,100))				
+					self.dataset[i].append(random.randrange(0,100))	
+					
 				
 			self.graph.dataset_changed = True							# replace this for an update method call which changes a flag?
 			t = time.time()
 			dt = t - t0
 			logging.debug("execution time add_stuff_dataset " + str(dt))
-
+			
 			try:
 				self.graph.clear_plot()
-			except:
+			except Exception as e:
 				print("issue cleaning plot")
+				print(e)
 	
 			
 
