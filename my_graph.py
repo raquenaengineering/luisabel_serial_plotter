@@ -8,23 +8,71 @@ import numpy as np
 
 from PyQt5.QtWidgets import(
 	QApplication,
-	QMainWindow
+	QMainWindow,
+	QWidget,
+	QHBoxLayout,																# create a new widget, which contains the MyGraph window
+	QVBoxLayout,
+	QLabel
 )
 
 from PyQt5.QtCore import(
 	QTimer
 )
 import pyqtgraph as pg
-
+import qtwidgets
 
 COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
+			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
+			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
 
 ]
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
+
+class MyPlot(QWidget):
+	
+	# Arduino serial plotter has 500 points max. on the x axis.
+	max_points = None													# maximum points per plot
+	
+	tvec = []															# independent variable, with "max_points" points. 
+			
+	n_plots = 12														# number of plots on the current plot. 
+	first = True														# first iteration only creating the plots
+	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
+	
+	
+	#dataset = []														# complete dataset, this should go to a file.							
+	plot_refs = []														# references to the different added plots.
+	plot_subset = []
+													
+	dataset_changed = False	
+	
+	
+	def __init__(self, dataset = None, max_points = 500):
+		super().__init__()	
+		
+		# central widget #
+		self.layout = QHBoxLayout()										# that's how we will lay out the window
+		self.setLayout(self.layout)
+		self.graph = MyGraph(dataset = [], max_points = 200)
+		self.layout.addWidget(self.graph)
+		self.layout_channel_select = QVBoxLayout()
+		self.layout.addLayout(self.layout_channel_select)
+		self.channel_label = QLabel("Channels:")
+		self.layout_channel_select.addWidget(self.channel_label)
+		self.addToggles()
+		
+	def addToggles(self):
+		for i in range(0, MAX_PLOTS):
+			#cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
+			color = "#"+COLORS[i]
+			print(color)
+			cb = qtwidgets.AnimatedToggle(checked_color = color)
+			#cb = qtwidgets.AnimatedToggle(checked_color = "#00ff00")
+			cb.setChecked(True)											# enabled by default
+			self.layout_channel_select.addWidget(cb)
+
 
 
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
@@ -143,6 +191,8 @@ if __name__ == "__main__":
 		def __init__(self):
 			
 			super().__init__()
+			
+			self.plot = MyPlot()
 
 			# initializing empty dataset #
 			for i in range(MAX_PLOTS):									# we're creating a dataset with an eXcess of rows!!!
@@ -157,7 +207,7 @@ if __name__ == "__main__":
 			self.data_timer.start(self.data_tick_ms)
 
 
-			self.setCentralWidget(self.graph)
+			self.setCentralWidget(self.plot)
 			# last step is showing the window #
 			self.show()
 			
@@ -178,11 +228,11 @@ if __name__ == "__main__":
 			dt = t - t0
 			logging.debug("execution time add_stuff_dataset " + str(dt))
 			
-			try:
-				self.graph.clear_plot()
-			except Exception as e:
-				print("issue cleaning plot")
-				print(e)
+			# ~ try:
+				# ~ self.graph.clear_plot()
+			# ~ except Exception as e:
+				# ~ print("issue cleaning plot")
+				# ~ print(e)
 	
 			
 
