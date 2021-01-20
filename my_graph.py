@@ -24,9 +24,7 @@ import qtwidgets
 COLORS = ["#ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
-			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
-
-]
+			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",]
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
 
@@ -37,7 +35,6 @@ class LabelledAnimatedToggle(QWidget):
 		self.label = QLabel(label_text)
 		self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
 		
-		# MAKING MARGINS OG THE QHBOXLAYOUT SMALLER IS MANDATORY!!!! --> IT TAKES TOO MUCH SPACE.	
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
 		self.layout.addWidget(self.toggle)
@@ -46,15 +43,12 @@ class LabelledAnimatedToggle(QWidget):
 		self.layout.setSpacing(0)
 		
 	def setLabel(self,label_text):
-		self.label.setText(label_text)
-		
+		self.label.setText(label_text)	
 	def setChecked(self, val):
 		self.toggle.setChecked(val)
 	def setEnabled(self, val):
 		self.toggle.setEnabled(val)
 		
-		
-
 
 class MyPlot(QWidget):
 	
@@ -68,7 +62,7 @@ class MyPlot(QWidget):
 	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	
 	
-	#dataset = []														# complete dataset, this should go to a file.							
+	dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
 	toggles = []														# references to the toggles which enable/disable plots.
 	names_refs = []														# references with the names
@@ -77,13 +71,13 @@ class MyPlot(QWidget):
 	dataset_changed = False	
 	
 	
-	def __init__(self, dataset = None, max_points = 500):
+	def __init__(self, dataset = [], max_points = 200):
 		super().__init__()	
 		
 		# central widget #
 		self.layout = QHBoxLayout()										# that's how we will lay out the window
 		self.setLayout(self.layout)
-		self.graph = MyGraph(dataset = [], max_points = 200)
+		self.graph = MyGraph(dataset = dataset, max_points = max_points)
 		self.layout.addWidget(self.graph)
 		self.layout_channel_select = QVBoxLayout()
 		self.layout.addLayout(self.layout_channel_select)
@@ -92,23 +86,13 @@ class MyPlot(QWidget):
 		self.add_toggles()
 				
 		self.layout_channel_name = QVBoxLayout()
-
-		self.set_channels_labels(["Gastro Medialis", "Gastro Lateralis", "Australopitecute"])
-		
-		#timers#
-		self.plot_timer = QTimer()										# used to update the plot
-		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
-		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
-		self.plot_timer.stop()											# will also control the refresh rate.	
-		
 		
 	def set_channels_labels(self,names):
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
 			try:
 				self.toggles[i].setLabel(names[i])
 			except Exception as e:
-				print(e)
-			
+				print(e)		
 			
 	def add_toggles(self):
 		for i in range(0, MAX_PLOTS):
@@ -122,47 +106,20 @@ class MyPlot(QWidget):
 			self.layout_channel_select.addWidget(label_toggle)
 
 	def create_plots(self):
-		for i in range (len(self.plot_subset)):
-			logging.debug("val of i:" + str(i))
-			#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
-			#p = self.plot(pen = (COLORS[i%24]),name ="Plot" + str(i))
-			p = self.plot(pen = (COLORS[i%24]))
-			self.plot_refs.append(p)
+		self.graph.create_plots()
+		# ~ for i in range (len(self.plot_subset)):
+			# ~ logging.debug("val of i:" + str(i))
+			# ~ p = self.plot(pen = (COLORS[i%24]))	# add argument  name = names_refs[i]???
+			# ~ self.plot_refs.append(p)
 
-			self.first = False
+			# ~ self.first = False
 
 	def clear_plot(self):												# NOT WORKING 
-		print("clear_plot method called")
-		for i in range(len(self.plot_subset)):
-			self.plot_refs[i].clear()									# clears the plot
-			self.plot_refs[i].setData([0])								# sets the data to 0, may not be necessary
-			#self.plot_subset[i] = []
-			
-	
+		self.graph.clear_plot()
+
 	def on_plot_timer(self):
-		print("more plot timers")
-
-		if self.first == True:											# FIRST: CREATE THE PLOTS 
-			self.create_plots()	
-			self.first = False
-			print("First plot timer")
-		# SECOND: UPDATE THE PLOTS:
-		
-		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
-			print("dataset has changed")
-			print("length of subset")
-			print(len(self.plot_subset))
-			self.dataset_changed = False
-			for i in range(len(self.plot_subset)):
-				 self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
-				# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
-									
-			for i in range(0,self.n_plots):		
-				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
-			
-			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
-		
-
+		print("PLOT TIMER MyPlot")
+		self.graph.on_plot_timer()
 
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
 	
@@ -176,7 +133,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	
 	
-	#dataset = []														# complete dataset, this should go to a file.							
+	dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
 	plot_subset = []
 													
@@ -185,47 +142,35 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 
 	#dataset = np.array()
 	
-	def __init__(self, dataset = None, max_points = 500):
+	def __init__(self, dataset = None, max_points = 500, title = ""):
 
 		for i in range(max_points):										# create a time vector --> move to NUMPY !!!
 			self.tvec.append(i)
 		
 		self.dataset = dataset											# get the reference to the dataset given as input for the constructor
 		self.max_points = max_points
-		
-			
-		# ~ for i in range(self.max_plots):								# this is the section of the dataset which will be plotted (always 1000 points per set)
-			# ~ self.plot_subset.append([])
 			
 		self.plot_subset = self.dataset[:self.n_plots][-(self.max_points):]	 # get only the portion of the dataset which needs to be printed. 	
-		
-		
+			
 		super().__init__()		
 		pg.setConfigOptions(antialias=False)							# antialiasing for nicer view. 
 		self.setBackground([70,70,70])									# changing default background color.
-		#self.setBackground([125,125,125])								# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
-		# do something to set the default axes range
-		#self.setRange(xRange = [0,1000], yRange = [-200,200])
-		self.setRange(xRange = [0,self.max_points], yRange = [-1200,1200])
+		self.setRange(xRange = [0,self.max_points], yRange = [-1200,1200]) # set default axes range
 		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=1000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
-		#self.enableAutoRange(axis='y', enable = True)
 		legend = self.addLegend()
-		# self.setTitle("PENIS")
-		
+		self.setTitle(title)											# if title is wanted
 			
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
 		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
-		self.plot_timer.stop()											# will also control the refresh rate.	
+		#self.plot_timer.stop()												
 
 
 	def create_plots(self):
 		for i in range (len(self.plot_subset)):
 			logging.debug("val of i:" + str(i))
-			#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
-			#p = self.plot(pen = (COLORS[i%24]),name ="Plot" + str(i))
 			p = self.plot(pen = (COLORS[i%24]))
 			self.plot_refs.append(p)
 
@@ -240,7 +185,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			
 	
 	def on_plot_timer(self):
-		print("more plot timers")
+		print("PLOT_TIMER MyGraph")
 
 		if self.first == True:											# FIRST: CREATE THE PLOTS 
 			self.create_plots()	
@@ -281,14 +226,15 @@ if __name__ == "__main__":
 			
 			super().__init__()
 			
-			self.plot = MyPlot()
 
 			# initializing empty dataset #
 			for i in range(MAX_PLOTS):									# we're creating a dataset with an eXcess of rows!!!
 				self.dataset.append([])	
 
 			# add graph and show #
-			self.graph = MyGraph(dataset = self.dataset)					# extend the constructor, to force giving a reference to a dataset ???
+			self.graph = MyGraph(dataset = self.dataset)
+			# ~ self.graph = MyPlot(dataset = self.dataset)					# extend the constructor, to force giving a reference to a dataset ???
+			# ~ self.plot.set_channels_labels(["Gastro Medialis", "Gastro Lateralis", "Australopitecute"])
 
 			
 			self.data_timer = QTimer()
@@ -296,11 +242,13 @@ if __name__ == "__main__":
 			self.data_timer.start(self.data_tick_ms)
 
 
-			self.setCentralWidget(self.plot)
+			self.setCentralWidget(self.graph)
 			# last step is showing the window #
 			self.show()
 			
-			self.graph.plot_timer.start()
+			#self.plot.graph.plot_timer.start()
+			
+			
 
 			
 		def on_data_timer(self):										# simulate data coming from external source at regular rate.
