@@ -32,15 +32,27 @@ MAX_PLOTS = 12															# Absolute maximum number of plots, change if neede
 
 class LabelledAnimatedToggle(QWidget):
 	
-	def __init__(self,label_text, color):								# optional parameters instead ???	
+	def __init__(self,color = "#aaffaa", label_text = ""):				# optional parameters instead ??? yes, thanks.
 		super().__init__()
 		self.label = QLabel(label_text)
 		self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
 		
+		# MAKING MARGINS OG THE QHBOXLAYOUT SMALLER IS MANDATORY!!!! --> IT TAKES TOO MUCH SPACE.	
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
 		self.layout.addWidget(self.toggle)
 		self.layout.addWidget(self.label)
+		self.layout.setContentsMargins(0,0,0,0)							# reducing the space the toggle takes as much as possible	
+		self.layout.setSpacing(0)
+		
+	def setLabel(self,label_text):
+		self.label.setText(label_text)
+		
+	def setChecked(self, val):
+		self.toggle.setChecked(val)
+	def setEnabled(self, val):
+		self.toggle.setEnabled(val)
+		
 		
 
 
@@ -58,7 +70,7 @@ class MyPlot(QWidget):
 	
 	#dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
-	toggle_refs = []													# references to the toggles which enable/disable plots.
+	toggles = []														# references to the toggles which enable/disable plots.
 	names_refs = []														# references with the names
 	plot_subset = []
 													
@@ -78,10 +90,6 @@ class MyPlot(QWidget):
 		self.channel_label = QLabel("Channels:")
 		self.layout_channel_select.addWidget(self.channel_label)
 		self.add_toggles()
-		self.labelled_toggle = LabelledAnimatedToggle(
-												label_text = "PENIS",
-												color = COLORS[0])
-		self.layout_channel_select.addWidget(self.labelled_toggle)
 				
 		self.layout_channel_name = QVBoxLayout()
 
@@ -96,28 +104,22 @@ class MyPlot(QWidget):
 		
 	def set_channels_labels(self,names):
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
-			name_ref = QLabel("PENE")
-			self.layout_channel_name.addWidget(name_ref)
-
-			# ~ self.names_refs.append([])
-			# ~ try:
-				# ~ self.names_refs[i] = QLabel(names[i])
-			# ~ except:
-				# ~ self.names_refs[i] = QLabel('-')
-			# ~ self.layout_channel_name.addWidget(self.names_refs[i])	
-		
+			try:
+				self.toggles[i].setLabel(names[i])
+			except Exception as e:
+				print(e)
+			
+			
 	def add_toggles(self):
 		for i in range(0, MAX_PLOTS):
 			color = "#"+COLORS[i]
-			print(color)
-			cb = qtwidgets.AnimatedToggle(checked_color = color)
-			cb.setChecked(False)										# all toggles not checked by default
-			cb.setEnabled(False)										# all toggles not enabled by default
-			self.layout_channel_select.addWidget(cb)
-			
-	def add_channels_names(self):
-		pass
-
+			print(color)			
+			label_toggle = LabelledAnimatedToggle()
+			#label_toggle = LabelledAnimatedToggle(color = color)
+			self.toggles.append(label_toggle)
+			label_toggle.setChecked(False)						# all toggles not checked by default	# create new method to call the toggle method?
+			label_toggle.setEnabled(True)						# all toggles not enabled by default
+			self.layout_channel_select.addWidget(label_toggle)
 
 	def create_plots(self):
 		for i in range (len(self.plot_subset)):
