@@ -21,7 +21,7 @@ from PyQt5.QtCore import(
 import pyqtgraph as pg
 import qtwidgets
 
-COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
+COLORS = ["#ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
@@ -29,6 +29,20 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 ]
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
+
+class LabelledAnimatedToggle(QWidget):
+	
+	def __init__(self,label_text, color):								# optional parameters instead ???	
+		super().__init__()
+		self.label = QLabel(label_text)
+		self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
+		
+		self.layout = QHBoxLayout()
+		self.setLayout(self.layout)
+		self.layout.addWidget(self.toggle)
+		self.layout.addWidget(self.label)
+		
+
 
 class MyPlot(QWidget):
 	
@@ -44,6 +58,8 @@ class MyPlot(QWidget):
 	
 	#dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
+	toggle_refs = []													# references to the toggles which enable/disable plots.
+	names_refs = []														# references with the names
 	plot_subset = []
 													
 	dataset_changed = False	
@@ -61,18 +77,89 @@ class MyPlot(QWidget):
 		self.layout.addLayout(self.layout_channel_select)
 		self.channel_label = QLabel("Channels:")
 		self.layout_channel_select.addWidget(self.channel_label)
-		self.addToggles()
+		self.add_toggles()
+		self.labelled_toggle = LabelledAnimatedToggle(
+												label_text = "PENIS",
+												color = COLORS[0])
+		self.layout_channel_select.addWidget(self.labelled_toggle)
+				
+		self.layout_channel_name = QVBoxLayout()
+
+		self.set_channels_labels(["Gastro Medialis", "Gastro Lateralis", "Australopitecute"])
 		
-	def addToggles(self):
+		#timers#
+		self.plot_timer = QTimer()										# used to update the plot
+		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
+		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
+		self.plot_timer.stop()											# will also control the refresh rate.	
+		
+		
+	def set_channels_labels(self,names):
+		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
+			name_ref = QLabel("PENE")
+			self.layout_channel_name.addWidget(name_ref)
+
+			# ~ self.names_refs.append([])
+			# ~ try:
+				# ~ self.names_refs[i] = QLabel(names[i])
+			# ~ except:
+				# ~ self.names_refs[i] = QLabel('-')
+			# ~ self.layout_channel_name.addWidget(self.names_refs[i])	
+		
+	def add_toggles(self):
 		for i in range(0, MAX_PLOTS):
-			#cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
 			color = "#"+COLORS[i]
 			print(color)
 			cb = qtwidgets.AnimatedToggle(checked_color = color)
-			#cb = qtwidgets.AnimatedToggle(checked_color = "#00ff00")
-			cb.setChecked(True)											# enabled by default
+			cb.setChecked(False)										# all toggles not checked by default
+			cb.setEnabled(False)										# all toggles not enabled by default
 			self.layout_channel_select.addWidget(cb)
+			
+	def add_channels_names(self):
+		pass
 
+
+	def create_plots(self):
+		for i in range (len(self.plot_subset)):
+			logging.debug("val of i:" + str(i))
+			#p = self.plot(pen = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)),name ="Plot" + str(i))
+			#p = self.plot(pen = (COLORS[i%24]),name ="Plot" + str(i))
+			p = self.plot(pen = (COLORS[i%24]))
+			self.plot_refs.append(p)
+
+			self.first = False
+
+	def clear_plot(self):												# NOT WORKING 
+		print("clear_plot method called")
+		for i in range(len(self.plot_subset)):
+			self.plot_refs[i].clear()									# clears the plot
+			self.plot_refs[i].setData([0])								# sets the data to 0, may not be necessary
+			#self.plot_subset[i] = []
+			
+	
+	def on_plot_timer(self):
+		print("more plot timers")
+
+		if self.first == True:											# FIRST: CREATE THE PLOTS 
+			self.create_plots()	
+			self.first = False
+			print("First plot timer")
+		# SECOND: UPDATE THE PLOTS:
+		
+		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
+			print("dataset has changed")
+			print("length of subset")
+			print(len(self.plot_subset))
+			self.dataset_changed = False
+			for i in range(len(self.plot_subset)):
+				 self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
+				# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
+									
+			for i in range(0,self.n_plots):		
+				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
+			
+			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
+		
 
 
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
