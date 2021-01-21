@@ -20,6 +20,7 @@ import qtwidgets
 
 import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
 from my_graph import MyGraph						# custom graph based om pyqtgraph, as a module with its own tests.
+from my_graph import MyPlot
 import my_graph										# for the global variables of the namespace.
 from shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
 
@@ -208,23 +209,21 @@ class MainWindow(QMainWindow):
 		# graph / plot #
 		self.layout_plot = QHBoxLayout()								# plot plus buttons to enable/disable graphs
 		self.layoutV1.addLayout(self.layout_plot)
-		self.plot_frame = MyGraph(dataset = self.dataset, 
+		self.plot_frame = MyPlot(dataset = self.dataset, 
 									max_points = 5000)					# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = 5000								# width of the plot in points, doesn't work !!!
 		self.layout_plot.addWidget(self.plot_frame)
 		# channel select checkboxes #
 		self.layout_channel_select = QVBoxLayout()
 		self.layout_plot.addLayout(self.layout_channel_select)
-		self.channel_label = QLabel("Channels:")
-		self.layout_channel_select.addWidget(self.channel_label)
-		for i in range(0, my_graph.MAX_PLOTS):
-			#cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
-			color = "#"+my_graph.COLORS[i]
-			print(color)
-			cb = qtwidgets.AnimatedToggle(checked_color = color)
-			#cb = qtwidgets.AnimatedToggle(checked_color = "#00ff00")
-			cb.setChecked(True)											# enabled by default
-			self.layout_channel_select.addWidget(cb)
+		# ~ for i in range(0, my_graph.MAX_PLOTS):
+			# ~ #cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
+			# ~ color = "#"+my_graph.COLORS[i]
+			# ~ print(color)
+			# ~ cb = qtwidgets.AnimatedToggle(checked_color = color)
+			# ~ #cb = qtwidgets.AnimatedToggle(checked_color = "#00ff00")
+			# ~ cb.setChecked(True)											# enabled by default
+			# ~ self.layout_channel_select.addWidget(cb)
 
 				
 		# buttons for plot #
@@ -675,7 +674,8 @@ class MainWindow(QMainWindow):
 				#self.plot_frame.dataset[i].append(valsf[i])
 				self.dataset[i].append(valsf[i])
 				
-			self.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
+			self.plot_frame.update()
+			#self.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
 	
 	def clear_dataset(self):
 		# initializing empty dataset #
