@@ -121,6 +121,14 @@ class MyPlot(QWidget):
 		print("PLOT TIMER MyPlot")
 		self.graph.on_plot_timer()
 
+
+	def plot_timer_start(self):
+		self.graph.timer.start()
+
+	def update(self):
+		self.graph.dataset_changed = True
+
+
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
 	
 	# Arduino serial plotter has 500 points max. on the x axis.
@@ -232,8 +240,8 @@ if __name__ == "__main__":
 				self.dataset.append([])	
 
 			# add graph and show #
-			self.graph = MyGraph(dataset = self.dataset)
-			# ~ self.graph = MyPlot(dataset = self.dataset)					# extend the constructor, to force giving a reference to a dataset ???
+			#self.graph = MyGraph(dataset = self.dataset)
+			self.plot = MyPlot(dataset = self.dataset)					# extend the constructor, to force giving a reference to a dataset ???
 			# ~ self.plot.set_channels_labels(["Gastro Medialis", "Gastro Lateralis", "Australopitecute"])
 
 			
@@ -242,7 +250,7 @@ if __name__ == "__main__":
 			self.data_timer.start(self.data_tick_ms)
 
 
-			self.setCentralWidget(self.graph)
+			self.setCentralWidget(self.plot)
 			# last step is showing the window #
 			self.show()
 			
@@ -253,14 +261,14 @@ if __name__ == "__main__":
 			
 		def on_data_timer(self):										# simulate data coming from external source at regular rate.
 			t0 = time.time()
-			logging.debug("length of dataset: " + str(len(self.graph.dataset)))
+			logging.debug("length of dataset: " + str(len(self.plot.dataset)))
 			
 			for i in range(0,MAX_PLOTS):
 				for j in range(50):
 					self.dataset[i].append(random.randrange(0,100))	
 					
 				
-			self.graph.dataset_changed = True							# replace this for an update method call which changes a flag?
+			self.plot.update()
 			t = time.time()
 			dt = t - t0
 			logging.debug("execution time add_stuff_dataset " + str(dt))
