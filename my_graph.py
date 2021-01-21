@@ -65,6 +65,7 @@ class MyPlot(QWidget):
 	dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
 	toggles = []														# references to the toggles which enable/disable plots.
+	enabled_graphs = []
 	names_refs = []														# references with the names
 	plot_subset = []
 													
@@ -86,6 +87,13 @@ class MyPlot(QWidget):
 		self.add_toggles()
 				
 		self.layout_channel_name = QVBoxLayout()
+		# timer #
+		self.plot_timer = QTimer()										# used to update the plot
+		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
+		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
+		#self.plot_timer.stop()				
+		
+		
 		
 	def set_channels_labels(self,names):
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
@@ -119,23 +127,31 @@ class MyPlot(QWidget):
 
 	def on_plot_timer(self):
 		print("PLOT TIMER MyPlot")
-		self.graph.on_plot_timer()
+		self.enabled_graphs = []
+		for i in range(0,MAX_PLOTS):
+			if(self.toggles[i].toggle.isChecked()):
+				self.enabled_graphs.append(True)
+			else:
+				self.enabled_graphs.append(False)
+			
+			
+		self.graph.enable_graphs(self.enabled_graphs)
+		self.graph.on_plot_timer()										# this is an option, to add together toggle processing and replot.
+		
 
-
-	def plot_timer_start(self):
+	def plot_timer_start(self):											
 		self.graph.timer.start()
 
-	def update(self):
+	def update(self):													# 
 		self.graph.dataset_changed = True
+		
 
 
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
 	
 	# Arduino serial plotter has 500 points max. on the x axis.
 	max_points = None													# maximum points per plot
-	
-	tvec = []															# independent variable, with "max_points" points. 
-			
+	tvec = []															# independent variable, with "max_points" points.			
 	n_plots = 12														# number of plots on the current plot. 
 	first = True														# first iteration only creating the plots
 	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
@@ -144,6 +160,10 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 	dataset = []														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
 	plot_subset = []
+	active_graphs = []
+	
+	for i in range(0,MAX_PLOTS):
+		active_graphs.append(False)
 													
 	dataset_changed = False
 
@@ -168,13 +188,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=1000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
 		legend = self.addLegend()
-		self.setTitle(title)											# if title is wanted
-			
-		self.plot_timer = QTimer()										# used to update the plot
-		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
-		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
-		#self.plot_timer.stop()												
-
+		self.setTitle(title)											# if title is wanted								
 
 	def create_plots(self):
 		for i in range (len(self.plot_subset)):
@@ -193,7 +207,8 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			
 	
 	def on_plot_timer(self):
-		logging.debug("PLOT_TIMER MyGraph")
+		print("PLOT_TIMER MyGraph")										
+		print (self.dataset_changed)	
 
 		if self.first == True:											# FIRST: CREATE THE PLOTS 
 			self.create_plots()	
@@ -207,9 +222,9 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			print(len(self.plot_subset))
 			self.dataset_changed = False
 			for i in range(len(self.plot_subset)):
-				print(mw.plot.toggles[i].toggle.isChecked())
+				print(self.active_graphs[i])
 				# NEXT LINE IS DIRTY AS FUCK, FIX INMEDIATELY !!!
-				if(mw.plot.toggles[i].toggle.isChecked() == True):
+				if(self.active_graphs[i] == True):
 					self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
 					# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
 				else:
@@ -222,6 +237,10 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
 		
 
+	def enable_graphs(self, enable_list):	
+		self.active_graphs = enable_list
+		#for i in range(0,MAX_PLOTS):
+						
 
 ## THIS PART WON'T BE EXECUTED WHEN IMPORTED AS A SUBMODULE, BUT ONLY WHEN TESTED INDEPENDENTLY ##
 
@@ -230,7 +249,7 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		
 		# class variables #
-		data_tick_ms = 500
+		data_tick_ms = 20
 
 		#creating a fixed size dataset #
 		dataset = []
@@ -248,7 +267,18 @@ if __name__ == "__main__":
 			# add graph and show #
 			#self.graph = MyGraph(dataset = self.dataset)
 			self.plot = MyPlot(dataset = self.dataset)					# extend the constructor, to force giving a reference to a dataset ???
-			# ~ self.plot.set_channels_labels(["Gastro Medialis", "Gastro Lateralis", "Australopitecute"])
+			self.plot.set_channels_labels(["Gastro Medialis", 
+											"Gastro Lateralis", 
+											"Australopitecute",
+											"caracol",
+											"col",
+											"pene",
+											"carapene",
+											"Ermengildo II",
+											"mondongo",
+											"cagarruta",
+											"Zurullo",
+											"caca"])
 
 			
 			self.data_timer = QTimer()
