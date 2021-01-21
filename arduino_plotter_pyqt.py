@@ -480,14 +480,13 @@ class MainWindow(QMainWindow):
 		self.status_bar.showMessage("Disconnected")						# showing sth is happening. 
 		self.plot_frame.clear_plot()									# clear plot
 		self.clear_dataset()
-		self.dataset = self.plot_frame.dataset							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
+		self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 		self.serial_port.close()
 		self.serial_timer.stop()
 		self.plot_frame.plot_timer.stop()
 		self.on_record_timer()											# this should save what's left to the file and clear the dataset
 		self.on_button_stop()											# and this should disable the recording, if we disconnect the serial port
 		print(SEPARATOR)
-
 
 
 	def on_button_pause(self):
@@ -653,10 +652,14 @@ class MainWindow(QMainWindow):
 				logging.debug("It contains also text");
 				# add to a captions vector
 				text_vals = vals
+				print(text_vals)
+				self.plot_frame.set_channels_labels(text_vals)
 	
 			for i in range(len(valsf)):									# this may not be the greatest option.
 				#for j in range(1):										# to make the plot squareish
 				#self.plot_frame.dataset[i].append(valsf[i])
+				print("dataset:")
+				print(self.dataset)
 				self.dataset[i].append(valsf[i])
 				
 			#self.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
