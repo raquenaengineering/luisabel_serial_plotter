@@ -213,19 +213,6 @@ class MainWindow(QMainWindow):
 									max_points = 5000)					# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = 5000								# width of the plot in points, doesn't work !!!
 		self.layout_plot.addWidget(self.plot_frame)
-		# channel select checkboxes #
-		self.layout_channel_select = QVBoxLayout()
-		self.layout_plot.addLayout(self.layout_channel_select)
-		# ~ for i in range(0, my_graph.MAX_PLOTS):
-			# ~ #cb = QCheckBox("CHANNEL " + str(i))							# one checkbox per channel
-			# ~ color = "#"+my_graph.COLORS[i]
-			# ~ print(color)
-			# ~ cb = qtwidgets.AnimatedToggle(checked_color = color)
-			# ~ #cb = qtwidgets.AnimatedToggle(checked_color = "#00ff00")
-			# ~ cb.setChecked(True)											# enabled by default
-			# ~ self.layout_channel_select.addWidget(cb)
-
-				
 		# buttons for plot #
 		self.layout_player = QHBoxLayout()
 		self.layoutV1.addLayout(self.layout_player)
@@ -647,8 +634,6 @@ class MainWindow(QMainWindow):
 						
 	def add_arduino_data(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
 
-		
-	
 		vals = readed.replace(' ',',')									# replace empty spaces for commas. 
 		vals = vals.split(',')											# arduino serial plotter splits with both characters.
 
@@ -674,8 +659,10 @@ class MainWindow(QMainWindow):
 				#self.plot_frame.dataset[i].append(valsf[i])
 				self.dataset[i].append(valsf[i])
 				
-			self.plot_frame.update()
 			#self.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
+			self.plot_frame.update()
+			print("updated")
+	
 	
 	def clear_dataset(self):
 		# initializing empty dataset #
