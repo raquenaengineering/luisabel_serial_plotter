@@ -21,7 +21,7 @@ from PyQt5.QtCore import(
 import pyqtgraph as pg
 import qtwidgets
 
-COLORS = ["#ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
+COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",]
@@ -98,8 +98,8 @@ class MyPlot(QWidget):
 		for i in range(0, MAX_PLOTS):
 			color = "#"+COLORS[i]
 			print(color)			
-			label_toggle = LabelledAnimatedToggle()
-			#label_toggle = LabelledAnimatedToggle(color = color)
+			#label_toggle = LabelledAnimatedToggle()
+			label_toggle = LabelledAnimatedToggle(color = color)
 			self.toggles.append(label_toggle)
 			label_toggle.setChecked(False)						# all toggles not checked by default	# create new method to call the toggle method?
 			label_toggle.setEnabled(True)						# all toggles not enabled by default
@@ -193,7 +193,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			
 	
 	def on_plot_timer(self):
-		print("PLOT_TIMER MyGraph")
+		logging.debug("PLOT_TIMER MyGraph")
 
 		if self.first == True:											# FIRST: CREATE THE PLOTS 
 			self.create_plots()	
@@ -207,8 +207,14 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			print(len(self.plot_subset))
 			self.dataset_changed = False
 			for i in range(len(self.plot_subset)):
-				 self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
-				# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
+				print(mw.plot.toggles[i].toggle.isChecked())
+				# NEXT LINE IS DIRTY AS FUCK, FIX INMEDIATELY !!!
+				if(mw.plot.toggles[i].toggle.isChecked() == True):
+					self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
+					# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
+				else:
+					self.plot_refs[i].setData([], name = "small penis")
+				
 									
 			for i in range(0,self.n_plots):		
 				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
@@ -224,7 +230,7 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		
 		# class variables #
-		data_tick_ms = 5
+		data_tick_ms = 500
 
 		#creating a fixed size dataset #
 		dataset = []
