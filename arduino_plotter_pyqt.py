@@ -69,7 +69,7 @@ from PyQt5.QtCore import(
 
 # GLOBAL VARIABLES #
 
-SERIAL_BUFFER_SIZE = 1000												# buffer size to store the incoming data from serial, to afterwards process it.
+SERIAL_BUFFER_SIZE = 5000												# buffer size to store the incoming data from serial, to afterwards process it.
 SEPARATOR = "----------------------------------------------------------"
 
 
@@ -117,7 +117,7 @@ ENDLINE_OPTIONS = [
 "Both NL & CR"
 ]
 
-RECORD_PERIOD = 10000													# time in ms between two savings of the recorded data onto file
+RECORD_PERIOD = 5000													# time in ms between two savings of the recorded data onto file
 
 
 # THREAD STUFF #  (not needed ATM)
@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
 	log_file_name = "log_file.csv"										# at some point, path needs to be selected by user. 
 	timeouts = 0
 	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
-
+	recording = False													# flag to start/stop recording. 
 	
 	# constructor # 
 	def __init__(self):
@@ -149,12 +149,11 @@ class MainWindow(QMainWindow):
 		
 		super().__init__()
 
-		# timer to record data onto file periodically #
+		# timer to record data onto file periodically (DELETES OLD DATA IF RECORD NOT ENABLED)#
 		self.record_timer = QTimer()
 		self.record_timer.timeout.connect(self.on_record_timer)			# will be enabled / disabled via button
 		self.record_timer.start(RECORD_PERIOD)							# deploys data onto file once a second
-		self.record_timer.stop()
-
+		# serial timer #
 		self.serial_timer = QTimer()									# we'll use timer instead of thread
 		self.serial_timer.timeout.connect(self.on_serial_timer)
 		self.serial_timer.start(50)										# period needs to be relatively short
@@ -210,7 +209,7 @@ class MainWindow(QMainWindow):
 		self.layout_plot = QHBoxLayout()								# plot plus buttons to enable/disable graphs
 		self.layoutV1.addLayout(self.layout_plot)
 		self.plot_frame = MyPlot(dataset = self.dataset, 
-									max_points = 5000)					# we'll use a custom class, so we can modify the defaults via class definition
+									max_points = 500)					# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = 5000								# width of the plot in points, doesn't work !!!
 		self.layout_plot.addWidget(self.plot_frame)
 		# buttons for plot #
@@ -507,14 +506,15 @@ class MainWindow(QMainWindow):
 
 	def on_button_record(self):
 		print("on_button_record method: ")
-		self.record_timer.start()	
+		#self.record_timer.start()										# record timer will be enabled by default, but will only delete old data, if recording not enabled.
+		self.start_recording()
 		#self.log_file = open(self.log_file_name,'w')					# prepare the file to write THIS SHOULDN'T BE HERE
 		self.button_record.setEnabled(False)
 		self.button_stop.setEnabled(True)
 
 	def on_button_stop(self):
 		print("on_button_stop method: ")
-		self.record_timer.stop()	
+		self.stop_recording()				
 		#self.log_file.close()
 		self.button_stop.setEnabled(False)
 		self.button_record.setEnabled(True)
@@ -565,35 +565,41 @@ class MainWindow(QMainWindow):
 			x_axis[i] = x_axis[i]*2
 		self.plot_frame.setRange(xRange = x_axis)	
 
+
+	def start_recording(self):
+		self.recording = True
+		
+	def stop_recording(self):
+		self.recording = False
+
 	def on_record_timer(self):
 		print("on_record_timer method called:")	
-		print("saving data to file")
 		t0 = time.time()
-		with open(self.log_file_name, mode = 'w', newline = '') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
-			dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
-			for variable in self.dataset:
-				dataset_writer.writerow(variable)
+		
+		if(self.recording == True):
+			print("saving data to file")
+			with open(self.log_file_name, mode = 'w', newline = '') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
+				dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
+				for variable in self.dataset:
+					dataset_writer.writerow(variable)
 		t = time.time()
 		dt = t-t0
 		print(dt)
 		print(SEPARATOR)
 		
-		# ~ print("Dataset:")
-		# ~ print(self.dataset)		
-		#self.log_file.write(str(self.dataset))
+		print("Dataset Cleaned")
 		self.clear_dataset()											# so we stop keeping track of all this data !!
-		self.dataset = self.plot_frame.dataset							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
-	
+		self.plot_frame.dataset = self.dataset 							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 	
 	def on_serial_timer(self):
 		keep_reading = 1												# flag to stop reading
 		byte_buffer = ''
 		mid_buffer = ''
 
-		print("on_serial_timer method: ")
+		#print("on_serial_timer method: ")
 		#while(keep_reading == 1):	
 		try:
-			byte_buffer = self.serial_port.read(5000)					# up to 1000 or as much as in buffer.
+			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
 		except Exception as e:
 			self.on_port_error(e)
 			self.on_button_disconnect_click()									# we've crashed the serial, so disconnect and REFRESH PORTS!!!
@@ -602,18 +608,11 @@ class MainWindow(QMainWindow):
 				mid_buffer = byte_buffer.decode('utf-8')
 			except Exception as e:
 				print (SEPARATOR)
-				print(e)
+				#print(e)
 				self.on_port_error(e)
 			else:
-				# ~ print("mid_buffer:")
-				# ~ print(mid_buffer)
 				self.read_buffer = self.read_buffer + mid_buffer
-				# ~ print("self.read_buffer:")
-				# ~ print(self.read_buffer)
-				
 				data_points = self.read_buffer.split(self.endline)
-				# ~ print(data_points)
-				
 				self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
 				a = data_points[:-1]
 				for data_point in a:										# so all data points except last. 
@@ -621,15 +620,10 @@ class MainWindow(QMainWindow):
 										
 				if(mid_buffer == ''):
 					print("mid Buffer Empty")
-					keep_reading = 0;
-
-				# ~ if(byte_buffer == b''):										# if last char is EOF, then we return.
-					# ~ keep_reading = 0;										# buffer was empty, nothing to send
-					# ~ print("Empty Buffer")							
+					keep_reading = 0;						
 
 				elif(byte_buffer[-1] == b''):
 					keep_reading = 0;										# we have new data, but we finished the buffer.
-					# ~ print(byte_buffer)
 						
 	def add_arduino_data(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
 
@@ -652,35 +646,24 @@ class MainWindow(QMainWindow):
 				logging.debug("It contains also text");
 				# add to a captions vector
 				text_vals = vals
-				print(text_vals)
 				self.plot_frame.set_channels_labels(text_vals)
-	
+			print("dataset on arduino_data:")
+			print(self.dataset)
+			print(valsf)
 			for i in range(len(valsf)):									# this may not be the greatest option.
-				#for j in range(1):										# to make the plot squareish
-				#self.plot_frame.dataset[i].append(valsf[i])
-				print("dataset:")
-				print(self.dataset)
 				self.dataset[i].append(valsf[i])
 				
-			#self.plot_frame.dataset_changed = True						# we've changed the dataset, so we update the plot.
 			self.plot_frame.update()
-			print("updated")
+			print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 	
 	
 	def clear_dataset(self):
 		# initializing empty dataset #
-		
-		# ~ print("dataset before clear:")
-		# ~ for i in range(len(self.dataset)):
-			# ~ print(self.dataset[i])
-		
-		
 		self.dataset = []
-		for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an escess of rows!!!
+		for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an excess of rows!!!
 			self.dataset.append([])	
-		# ~ print("dataset after clear:")
-		# ~ for i in range(len(self.dataset)):
-			# ~ print(self.dataset[i])
+		print("dataset clear:")
+		print(self.dataset)
 						
 	def on_port_error(self,e):									# triggered by the serial thread, shows a window saying port is used by sb else.
 
