@@ -117,8 +117,8 @@ ENDLINE_OPTIONS = [
 "Both NL & CR"
 ]
 
-RECORD_PERIOD = 5000													# time in ms between two savings of the recorded data onto file
-
+RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
+POINTS_PER_PLOT = 500
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -144,10 +144,10 @@ class MainWindow(QMainWindow):
 	
 	# constructor # 
 	def __init__(self):
-		
-		self.clear_dataset()											# creates empty dataset with as many items as will be later on needed.
-		
+				
 		super().__init__()
+		
+		self.init_dataset()
 
 		# timer to record data onto file periodically (DELETES OLD DATA IF RECORD NOT ENABLED)#
 		self.record_timer = QTimer()
@@ -210,7 +210,7 @@ class MainWindow(QMainWindow):
 		self.layoutV1.addLayout(self.layout_plot)
 		self.plot_frame = MyPlot(dataset = self.dataset, 
 									max_points = 500)					# we'll use a custom class, so we can modify the defaults via class definition
-		self.plot_frame.max_points = 5000								# width of the plot in points, doesn't work !!!
+		self.plot_frame.max_points = POINTS_PER_PLOT					# width of the plot in points, doesn't work !!!
 		self.layout_plot.addWidget(self.plot_frame)
 		# buttons for plot #
 		self.layout_player = QHBoxLayout()
@@ -409,7 +409,7 @@ class MainWindow(QMainWindow):
 
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
-		self.plot_frame.plot_timer.start()								# this should happen inside my_graph
+		self.on_button_play()
 
 	def serial_connect(self, port_name):
 		logging.debug("serial_connect method called")
@@ -492,7 +492,8 @@ class MainWindow(QMainWindow):
 		# pause the plot:
 		# so stop the update timer. #
 		print("on_button_pause method: ")
-		self.plot_frame.plot_timer.stop()								# but we won't be able to rearm...
+		#self.plot_frame.plot_timer.stop()								# but we won't be able to rearm...
+		self.plot_frame.stop_plotting()
 		self.button_pause.setEnabled(False)
 		self.button_play.setEnabled(True)
 		
@@ -502,13 +503,12 @@ class MainWindow(QMainWindow):
 		print("on_button_play method: ")
 		self.button_play.setEnabled(False)
 		self.button_pause.setEnabled(True)
-		self.plot_frame.plot_timer.start()								# but we won't be able to rearm...
+		#self.plot_frame.plot_timer.start()								# but we won't be able to rearm...
+		self.plot_frame.start_plotting()
 
 	def on_button_record(self):
 		print("on_button_record method: ")
-		#self.record_timer.start()										# record timer will be enabled by default, but will only delete old data, if recording not enabled.
 		self.start_recording()
-		#self.log_file = open(self.log_file_name,'w')					# prepare the file to write THIS SHOULDN'T BE HERE
 		self.button_record.setEnabled(False)
 		self.button_stop.setEnabled(True)
 
@@ -587,17 +587,21 @@ class MainWindow(QMainWindow):
 		print(dt)
 		print(SEPARATOR)
 		
-		print("Dataset Cleaned")
-		self.clear_dataset()											# so we stop keeping track of all this data !!
-		self.plot_frame.dataset = self.dataset 							# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
+		print("dataset lenght on_record_timer():")
+		print(len(self.dataset[0]))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
+		
+			
+		if(len(self.dataset[0]) > 2*POINTS_PER_PLOT):
+			#last_items = 
+			print("Dataset Cleaned")
+			self.clear_dataset()										# so we stop keeping track of all this data !!
+			#self.plot_frame.dataset = self.dataset 					# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 	
 	def on_serial_timer(self):
-		keep_reading = 1												# flag to stop reading
+		
 		byte_buffer = ''
 		mid_buffer = ''
 
-		#print("on_serial_timer method: ")
-		#while(keep_reading == 1):	
 		try:
 			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
 		except Exception as e:
@@ -617,13 +621,6 @@ class MainWindow(QMainWindow):
 				a = data_points[:-1]
 				for data_point in a:										# so all data points except last. 
 					self.add_arduino_data(data_point)
-										
-				if(mid_buffer == ''):
-					print("mid Buffer Empty")
-					keep_reading = 0;						
-
-				elif(byte_buffer[-1] == b''):
-					keep_reading = 0;										# we have new data, but we finished the buffer.
 						
 	def add_arduino_data(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
 
@@ -647,25 +644,31 @@ class MainWindow(QMainWindow):
 				# add to a captions vector
 				text_vals = vals
 				self.plot_frame.set_channels_labels(text_vals)
-			print("dataset on arduino_data:")
-			print(self.dataset)
-			print(valsf)
+			# ~ print("dataset on arduino_data:")
+			# ~ print(self.dataset)
+			# ~ print(valsf)
 			for i in range(len(valsf)):									# this may not be the greatest option.
 				self.dataset[i].append(valsf[i])
 				
 			self.plot_frame.update()
-			print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
+			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 	
+	def init_dataset(self):
+		for i in range(my_graph.MAX_PLOTS):	
+			self.dataset.append([])
 	
 	def clear_dataset(self):
+				
 		# initializing empty dataset #
-		self.dataset = []
-		for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an excess of rows!!!
-			self.dataset.append([])	
+		for i in range(my_graph.MAX_PLOTS):	
+			self.dataset[i] = []
+		# ~ self.dataset = []
+		# ~ for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an excess of rows!!!
+			# ~ self.dataset.append([])	
 		print("dataset clear:")
 		print(self.dataset)
 						
-	def on_port_error(self,e):									# triggered by the serial thread, shows a window saying port is used by sb else.
+	def on_port_error(self,e):											# triggered by the serial thread, shows a window saying port is used by sb else.
 
 		desc = str(e)
 		logging.debug(type(e))
