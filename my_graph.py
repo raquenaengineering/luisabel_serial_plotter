@@ -2,6 +2,7 @@
 import random
 import time 
 import logging
+import math
 
 import numpy as np
 
@@ -90,43 +91,36 @@ class MyPlot(QWidget):
 		# timer #
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# 
-		self.plot_timer.start(self.plot_tick_ms)						# will also control the refresh rate.	
-		#self.plot_timer.stop()				
-		
-		
+		self.start_plotting(self.plot_tick_ms)
+		self.stop_plotting()			
 		
 	def set_channels_labels(self,names):
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
 			try:
 				self.toggles[i].setLabel(names[i])
 			except Exception as e:
-				print(e)		
-			
+				logging.debug("more channels than labels")
+				#print(e)		
+					
 	def add_toggles(self):
 		for i in range(0, MAX_PLOTS):
 			color = "#"+COLORS[i]
-			print(color)			
+			#print(color)			
 			#label_toggle = LabelledAnimatedToggle()
 			label_toggle = LabelledAnimatedToggle(color = color)
 			self.toggles.append(label_toggle)
-			label_toggle.setChecked(False)						# all toggles not checked by default	# create new method to call the toggle method?
+			label_toggle.setChecked(True)						# all toggles not checked by default	# create new method to call the toggle method?
 			label_toggle.setEnabled(True)						# all toggles not enabled by default
 			self.layout_channel_select.addWidget(label_toggle)
 
 	def create_plots(self):
 		self.graph.create_plots()
-		# ~ for i in range (len(self.plot_subset)):
-			# ~ logging.debug("val of i:" + str(i))
-			# ~ p = self.plot(pen = (COLORS[i%24]))	# add argument  name = names_refs[i]???
-			# ~ self.plot_refs.append(p)
-
-			# ~ self.first = False
 
 	def clear_plot(self):												# NOT WORKING 
 		self.graph.clear_plot()
 
-	def on_plot_timer(self):
-		print("PLOT TIMER MyPlot")
+	def on_plot_timer(self):											# this is an option, to add together toggle processing and replot.
+		#print("PLOT TIMER MyPlot")
 		self.enabled_graphs = []
 		for i in range(0,MAX_PLOTS):
 			if(self.toggles[i].toggle.isChecked()):
@@ -134,18 +128,26 @@ class MyPlot(QWidget):
 			else:
 				self.enabled_graphs.append(False)
 			
-			
-		self.graph.enable_graphs(self.enabled_graphs)
-		self.graph.on_plot_timer()										# this is an option, to add together toggle processing and replot.
+		self.graph.enable_graphs(self.enabled_graphs)					# writes to a variable of graph indicating which graphs are on
+		self.graph.on_plot_timer()										# calls the regular plot timer from graph.
 		
-
 	def plot_timer_start(self):											
 		self.graph.timer.start()
 
 	def update(self):													# 
 		self.graph.dataset_changed = True
 		
+	def setBackground(self, color):
+		self.graph.setBackground(color)
 
+	def start_plotting(self, period = None):
+		if(period == None):
+			self.plot_timer.start()
+		else:
+			self.plot_timer.start(period)
+
+	def stop_plotting(self):
+		self.plot_timer.stop()
 
 class MyGraph(pg.PlotWidget):											# this is supposed to be the python convention for classes. 
 	
@@ -157,7 +159,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	
 	
-	dataset = []														# complete dataset, this should go to a file.							
+	dataset = None														# complete dataset, this should go to a file.							
 	plot_refs = []														# references to the different added plots.
 	plot_subset = []
 	active_graphs = []
@@ -207,8 +209,8 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			
 	
 	def on_plot_timer(self):
-		print("PLOT_TIMER MyGraph")										
-		print (self.dataset_changed)	
+		#print("PLOT_TIMER MyGraph")										
+		#print (self.dataset_changed)	
 
 		if self.first == True:											# FIRST: CREATE THE PLOTS 
 			self.create_plots()	
@@ -217,18 +219,17 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		# SECOND: UPDATE THE PLOTS:
 		
 		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
-			print("dataset has changed")
-			print("length of subset")
-			print(len(self.plot_subset))
+			#print("dataset has changed")
+			#print("length of subset")
+			#print(len(self.plot_subset))
 			self.dataset_changed = False
 			for i in range(len(self.plot_subset)):
-				print(self.active_graphs[i])
-				# NEXT LINE IS DIRTY AS FUCK, FIX INMEDIATELY !!!
+				#print(self.active_graphs[i])
 				if(self.active_graphs[i] == True):
 					self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
 					# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
 				else:
-					self.plot_refs[i].setData([], name = "small penis")
+					self.plot_refs[i].setData([], name = "small penis")	# empty plot, if toggle not active.
 				
 									
 			for i in range(0,self.n_plots):		
@@ -280,6 +281,7 @@ if __name__ == "__main__":
 											"Zurullo",
 											"caca"])
 
+			self.plot.start_plotting()
 			
 			self.data_timer = QTimer()
 			self.data_timer.timeout.connect(self.on_data_timer)
@@ -299,7 +301,9 @@ if __name__ == "__main__":
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.plot.dataset)))
 			
-			for i in range(0,MAX_PLOTS):
+			for j in range(50):
+				self.dataset[0].append(50*math.sin(j/4) + 80)
+			for i in range(1,MAX_PLOTS):
 				for j in range(50):
 					self.dataset[i].append(random.randrange(0,100))	
 					
@@ -308,13 +312,6 @@ if __name__ == "__main__":
 			t = time.time()
 			dt = t - t0
 			logging.debug("execution time add_stuff_dataset " + str(dt))
-			
-			# ~ try:
-				# ~ self.graph.clear_plot()
-			# ~ except Exception as e:
-				# ~ print("issue cleaning plot")
-				# ~ print(e)
-	
 			
 
 	app = QApplication([])
