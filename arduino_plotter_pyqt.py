@@ -480,6 +480,7 @@ class MainWindow(QMainWindow):
 		self.plot_frame.clear_plot()									# clear plot
 		self.clear_dataset()
 		self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
+		self.plot_frame.clear_channels_labels()
 		self.serial_port.close()
 		self.serial_timer.stop()
 		self.plot_frame.plot_timer.stop()

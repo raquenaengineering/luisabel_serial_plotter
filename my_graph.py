@@ -101,6 +101,14 @@ class MyPlot(QWidget):
 			except Exception as e:
 				logging.debug("more channels than labels")
 				#print(e)		
+
+	def clear_channels_labels(self):
+		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
+			try:
+				self.toggles[i].setLabel('')
+			except Exception as e:
+				logging.debug("more channels than labels")
+				#print(e)	
 					
 	def add_toggles(self):
 		for i in range(0, MAX_PLOTS):
