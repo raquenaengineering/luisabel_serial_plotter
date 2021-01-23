@@ -140,7 +140,8 @@ class MainWindow(QMainWindow):
 	full_screen_flag = False
 	dataset = []  
 	log_folder = "logs"													# in the beginning, log folder, path and filename are fixed
-	log_file_name = "log_file.csv"										# at some point, path needs to be selected by user. 
+	log_file_name = "log_file.csv"										# at some point, path needs to be selected by user.
+	n_logs = 0 
 	log_full_path = None												# this variable will be the one used to record 
 	timeouts = 0
 	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
@@ -332,6 +333,9 @@ class MainWindow(QMainWindow):
 		fullpath = path +'/'+ self.log_folder +'/'+ self.log_file_name
 		print("Full file path")
 		print(fullpath)
+		if os.path.exists(fullpath):
+			fullpath = fullpath + str(self.n_logs)
+			self.n_logs = self.n_logs + 1
 		
 		self.log_full_path = fullpath;
 	
