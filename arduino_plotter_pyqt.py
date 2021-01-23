@@ -2,6 +2,8 @@
 import sys											# deal with OS, open files and so
 import time 										# delays, and time measurement ?
 import random										# random numbers
+import os											# dealing with directories
+
 
 import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
@@ -118,7 +120,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 500
+POINTS_PER_PLOT = 100
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -137,7 +139,9 @@ class MainWindow(QMainWindow):
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
 	full_screen_flag = False
 	dataset = []  
+	log_folder = "logs"													# in the beginning, log folder, path and filename are fixed
 	log_file_name = "log_file.csv"										# at some point, path needs to be selected by user. 
+	log_full_path = None												# this variable will be the one used to record 
 	timeouts = 0
 	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording. 
@@ -209,7 +213,7 @@ class MainWindow(QMainWindow):
 		self.layout_plot = QHBoxLayout()								# plot plus buttons to enable/disable graphs
 		self.layoutV1.addLayout(self.layout_plot)
 		self.plot_frame = MyPlot(dataset = self.dataset, 
-									max_points = 500)					# we'll use a custom class, so we can modify the defaults via class definition
+									max_points = POINTS_PER_PLOT)		# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = POINTS_PER_PLOT					# width of the plot in points, doesn't work !!!
 		self.layout_plot.addWidget(self.plot_frame)
 		# buttons for plot #
@@ -310,6 +314,27 @@ class MainWindow(QMainWindow):
 		#event.ignore()													# extremely useful to ignore the close event !
 	
 	# actions #		
+	
+	def set_logfile(self):	
+		# 1. be sure the folder where the log file should be placed exists
+		# logs folder #
+		print("Log file name:")
+		print(self.log_file_name)
+		print("Log file folder:")
+		print(self.log_folder)
+		
+		if not os.path.exists(self.log_folder):							# create logs folder to store the logs
+			os.makedirs(self.log_folder)								# mkdir only makes one directory on the path, makedirs, makes all
+		# 2. check what's on that folder.
+		path = os.getcwd()
+		print("current path:")
+		print(path)
+		fullpath = path +'/'+ self.log_folder +'/'+ self.log_file_name
+		print("Full file path")
+		print(fullpath)
+		
+		self.log_full_path = fullpath;
+	
 		
 	def send_serial(self):												# do I need another thread for this ???
 		logging.debug("Send Serial")
@@ -510,6 +535,7 @@ class MainWindow(QMainWindow):
 	def on_button_record(self):
 		print("on_button_record method: ")
 		self.start_recording()
+		self.set_logfile()
 		self.button_record.setEnabled(False)
 		self.button_stop.setEnabled(True)
 
@@ -568,6 +594,7 @@ class MainWindow(QMainWindow):
 
 
 	def start_recording(self):
+		self.set_logfile()
 		self.recording = True
 		
 	def stop_recording(self):
@@ -579,10 +606,18 @@ class MainWindow(QMainWindow):
 		
 		if(self.recording == True):
 			print("saving data to file")
-			with open(self.log_file_name, mode = 'w', newline = '') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
+			np_data = np.array(self.dataset)
+			np_data_t = np_data.transpose()
+			print("Data")
+			print(np_data)
+			print(SEPARATOR)
+			print("Transposed data")
+			print(np_data_t)
+			print(SEPARATOR)
+			with open(self.log_full_path, mode = 'a', newline = '') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
 				dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
-				for variable in self.dataset:
-					dataset_writer.writerow(variable)
+				for value in np_data_t:
+					dataset_writer.writerow(value)
 		t = time.time()
 		dt = t-t0
 		print(dt)
@@ -655,17 +690,14 @@ class MainWindow(QMainWindow):
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 	
 	def init_dataset(self):
+		self.dataset = []
 		for i in range(my_graph.MAX_PLOTS):	
 			self.dataset.append([])
 	
-	def clear_dataset(self):
-				
+	def clear_dataset(self):	
 		# initializing empty dataset #
 		for i in range(my_graph.MAX_PLOTS):	
 			self.dataset[i] = []
-		# ~ self.dataset = []
-		# ~ for i in range(my_graph.MAX_PLOTS):								# we're creating a dataset with an excess of rows!!!
-			# ~ self.dataset.append([])	
 		print("dataset clear:")
 		print(self.dataset)
 						
