@@ -631,15 +631,16 @@ class MainWindow(QMainWindow):
 		print(dt)
 		print(SEPARATOR)
 		
-		print("dataset lenght on_record_timer():")
+		print("dataset lenght[0] on_record_timer():")
 		print(len(self.dataset[0]))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
+		print("dataset lenght on_timer")
+		print(len(self.dataset))
 		
 			
 		if(len(self.dataset[0]) > 2*POINTS_PER_PLOT):
 			#last_items = 
 			print("Dataset Cleaned")
 			self.clear_dataset()										# so we stop keeping track of all this data !!
-			#self.plot_frame.dataset = self.dataset 					# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 	
 	def on_serial_timer(self):
 		
@@ -688,9 +689,20 @@ class MainWindow(QMainWindow):
 				# add to a captions vector
 				text_vals = vals
 				self.plot_frame.set_channels_labels(text_vals)
-			for i in range(len(valsf)):									# this may not be the greatest option.
-				self.dataset[i].append(valsf[i])
-				
+			# ~ for i in range(len(valsf)):									# this may not be the greatest option.
+				# ~ self.dataset[i].append(valsf[i])
+				# ~ print("dataset on the only part of the code where we add stuff to it")
+				# ~ print(self.dataset)
+			else:
+				for i in range(my_graph.MAX_PLOTS):							# this may not be the greatest option.
+					try:
+						self.dataset[i].append(valsf[i])					# if valsf has only 4 elements, it will throw error at 5th	
+					except:
+						pass
+						self.dataset[i].append(0)
+					print("dataset on the only part of the code where we add stuff to it")
+					print(self.dataset)
+					
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 	
