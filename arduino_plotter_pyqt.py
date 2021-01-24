@@ -218,6 +218,8 @@ class MainWindow(QMainWindow):
 		self.plot_frame = MyPlot(dataset = self.dataset, 
 									max_points = POINTS_PER_PLOT)		# we'll use a custom class, so we can modify the defaults via class definition
 		self.plot_frame.max_points = POINTS_PER_PLOT					# width of the plot in points, doesn't work !!!
+		self.plot_frame.enable_toggles("none")
+		self.plot_frame.check_toggles("none")
 		self.layout_plot.addWidget(self.plot_frame)
 		# buttons for plot #
 		self.layout_player = QHBoxLayout()
@@ -513,6 +515,8 @@ class MainWindow(QMainWindow):
 		self.clear_dataset()
 		self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 		self.plot_frame.clear_channels_labels()
+		#self.plot_frame.check_toggles("none")
+		#self.plot_frame.enable_toggles("none")
 		self.serial_port.close()
 		self.serial_timer.stop()
 		self.plot_frame.plot_timer.stop()
@@ -697,11 +701,15 @@ class MainWindow(QMainWindow):
 				for i in range(my_graph.MAX_PLOTS):							# this may not be the greatest option.
 					try:
 						self.dataset[i].append(valsf[i])					# if valsf has only 4 elements, it will throw error at 5th	
+						if(True):	# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
+							self.plot_frame.toggles[i].setEnabled(True)		# DO THIS USING A METHOD OF PLOT_FRAME !!!!
+							#self.plot_frame.toggles[i].setChecked(True)
+							pass
 					except:
 						pass
 						self.dataset[i].append(0)
-					print("dataset on the only part of the code where we add stuff to it")
-					print(self.dataset)
+					# ~ print("dataset on the only part of the code where we add stuff to it")
+					# ~ print(self.dataset)
 					
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))

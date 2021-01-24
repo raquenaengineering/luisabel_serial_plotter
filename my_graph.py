@@ -113,20 +113,20 @@ class MyPlot(QWidget):
 	def enable_toggles(self,val):
 		if(val == "all"):
 			for i in range(MAX_PLOTS):
-				self.toggles.setEnabled(True)
+				self.toggles[i].setEnabled(True)
 		elif(val == "none"):
 			for i in range(MAX_PLOTS):
-				self.toggles.setEnabled(False) 
+				self.toggles[i].setEnabled(False) 
 		else:
 			pass			# fill with behavior if val is a vector
 		
 	def check_toggles(self,val):
 		if(val == "all"):
 			for i in range(MAX_PLOTS):
-				self.toggles.setChecked(True)
+				self.toggles[i].setChecked(True)
 		elif(val == "none"):
 			for i in range(MAX_PLOTS):
-				self.toggles.setChecked(False) 
+				self.toggles[i].setChecked(False) 
 		else:
 			pass
 		
