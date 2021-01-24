@@ -140,7 +140,8 @@ class MainWindow(QMainWindow):
 	full_screen_flag = False
 	dataset = []  
 	log_folder = "logs"													# in the beginning, log folder, path and filename are fixed
-	log_file_name = "log_file.csv"										# at some point, path needs to be selected by user.
+	log_file_name = "log_file"											# at some point, path needs to be selected by user.
+	log_file_type = ".csv"												# file extension
 	n_logs = 0 
 	log_full_path = None												# this variable will be the one used to record 
 	timeouts = 0
@@ -158,6 +159,7 @@ class MainWindow(QMainWindow):
 		self.record_timer = QTimer()
 		self.record_timer.timeout.connect(self.on_record_timer)			# will be enabled / disabled via button
 		self.record_timer.start(RECORD_PERIOD)							# deploys data onto file once a second
+		self.record_timer.stop()
 		# serial timer #
 		self.serial_timer = QTimer()									# we'll use timer instead of thread
 		self.serial_timer.timeout.connect(self.on_serial_timer)
@@ -330,11 +332,11 @@ class MainWindow(QMainWindow):
 		path = os.getcwd()
 		print("current path:")
 		print(path)
-		fullpath = path +'/'+ self.log_folder +'/'+ self.log_file_name
+		fullpath = path +'/'+ self.log_folder +'/'+ self.log_file_name + self.log_file_type
 		print("Full file path")
 		print(fullpath)
 		if os.path.exists(fullpath):
-			fullpath = fullpath + str(self.n_logs)
+			fullpath = path +'/'+ self.log_folder +'/'+ self.log_file_name + str(self.n_logs) + self.log_file_type
 			self.n_logs = self.n_logs + 1
 		
 		self.log_full_path = fullpath;
@@ -435,6 +437,7 @@ class MainWindow(QMainWindow):
 		self.combo_endline_params.setEnabled(False)
 		self.textbox_send_command.setEnabled(True)
 		self.button_pause.setEnabled(True)
+		self.record_timer.start()
 
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
@@ -515,6 +518,7 @@ class MainWindow(QMainWindow):
 		self.plot_frame.plot_timer.stop()
 		self.on_record_timer()											# this should save what's left to the file and clear the dataset
 		self.on_button_stop()											# and this should disable the recording, if we disconnect the serial port
+		self.record_timer.stop()
 		print(SEPARATOR)
 
 
@@ -684,9 +688,6 @@ class MainWindow(QMainWindow):
 				# add to a captions vector
 				text_vals = vals
 				self.plot_frame.set_channels_labels(text_vals)
-			# ~ print("dataset on arduino_data:")
-			# ~ print(self.dataset)
-			# ~ print(valsf)
 			for i in range(len(valsf)):									# this may not be the greatest option.
 				self.dataset[i].append(valsf[i])
 				
@@ -697,13 +698,17 @@ class MainWindow(QMainWindow):
 		self.dataset = []
 		for i in range(my_graph.MAX_PLOTS):	
 			self.dataset.append([])
+		print("dataset after INIT--------------------------------------")
+		print(self.dataset)
+		print(SEPARATOR)
 	
 	def clear_dataset(self):	
 		# initializing empty dataset #
 		for i in range(my_graph.MAX_PLOTS):	
 			self.dataset[i] = []
-		print("dataset clear:")
+		print("dataset after CLEAR-------------------------------------")
 		print(self.dataset)
+		print(SEPARATOR)
 						
 	def on_port_error(self,e):											# triggered by the serial thread, shows a window saying port is used by sb else.
 
