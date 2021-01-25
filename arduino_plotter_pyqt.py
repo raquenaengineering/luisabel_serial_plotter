@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
 	timeouts = 0
 	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording. 
-	first_toggles = True												# used to check the toggles which contain data on start graphing. 		
+	first_toggles = 0												# used to check the toggles which contain data on start graphing. 		
 	
 	# constructor # 
 	def __init__(self):
@@ -446,7 +446,7 @@ class MainWindow(QMainWindow):
 		self.start_serial()
 		self.on_button_play()
 		
-		self.first_toggles = True
+		self.first_toggles = 0
 
 
 	def serial_connect(self, port_name):
@@ -707,14 +707,14 @@ class MainWindow(QMainWindow):
 						self.dataset[i].append(valsf[i])					# if valsf has only 4 elements, it will throw error at 5th	
 						self.plot_frame.toggles[i].setEnabled(True)			# enable all graphs conataining data
 									
-						if(self.first_toggles == True):						# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
+						if(self.first_toggles <= 2):							# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
 							self.plot_frame.toggles[i].setChecked(True)
 					except:
 						pass
 						self.dataset[i].append(0)
 					# ~ print("dataset on the only part of the code where we add stuff to it")
 					# ~ print(self.dataset)
-				self.first_toggles = False
+				self.first_toggles = self.first_toggles + 1
 					
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
