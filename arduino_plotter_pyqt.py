@@ -147,6 +147,7 @@ class MainWindow(QMainWindow):
 	timeouts = 0
 	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording. 
+	first_toggles = True												# used to check the toggles which contain data on start graphing. 		
 	
 	# constructor # 
 	def __init__(self):
@@ -444,6 +445,9 @@ class MainWindow(QMainWindow):
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
 		self.on_button_play()
+		
+		self.first_toggles = True
+
 
 	def serial_connect(self, port_name):
 		logging.debug("serial_connect method called")
@@ -515,8 +519,8 @@ class MainWindow(QMainWindow):
 		self.clear_dataset()
 		self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
 		self.plot_frame.clear_channels_labels()
-		#self.plot_frame.check_toggles("none")
-		#self.plot_frame.enable_toggles("none")
+		self.plot_frame.check_toggles("none")
+		self.plot_frame.enable_toggles("none")
 		self.serial_port.close()
 		self.serial_timer.stop()
 		self.plot_frame.plot_timer.stop()
@@ -701,15 +705,16 @@ class MainWindow(QMainWindow):
 				for i in range(my_graph.MAX_PLOTS):							# this may not be the greatest option.
 					try:
 						self.dataset[i].append(valsf[i])					# if valsf has only 4 elements, it will throw error at 5th	
-						if(True):	# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
-							self.plot_frame.toggles[i].setEnabled(True)		# DO THIS USING A METHOD OF PLOT_FRAME !!!!
-							#self.plot_frame.toggles[i].setChecked(True)
-							pass
+						self.plot_frame.toggles[i].setEnabled(True)			# enable all graphs conataining data
+									
+						if(self.first_toggles == True):						# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
+							self.plot_frame.toggles[i].setChecked(True)
 					except:
 						pass
 						self.dataset[i].append(0)
 					# ~ print("dataset on the only part of the code where we add stuff to it")
 					# ~ print(self.dataset)
+				self.first_toggles = False
 					
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
