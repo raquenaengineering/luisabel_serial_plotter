@@ -95,11 +95,11 @@ class MyPlot(QWidget):
 			toggle.setChecked(True)
 			toggle.setEnabled(True)
 		
-		for toggle in self.toggles:
-			print("IsChecked")
-			print(toggle.isChecked())
-			print("IsEnabled")
-			print(toggle.isEnabled())
+		# ~ for toggle in self.toggles:
+			# ~ print("IsChecked")
+			# ~ print(toggle.isChecked())
+			# ~ print("IsEnabled")
+			# ~ print(toggle.isEnabled())
 						
 	def add_toggles(self):												# encapsulates the creation of the toggles, and their initial setup.
 		for i in range(0, MAX_PLOTS):
@@ -152,13 +152,6 @@ class MyPlot(QWidget):
 		self.graph.clear_plot()
 
 	def on_plot_timer(self):											# this is an option, to add together toggle processing and replot.
-		#print("PLOT TIMER MyPlot")
-		# ~ self.enabled_graphs = []
-		# ~ for i in range(0,MAX_PLOTS):
-			# ~ if(self.toggles[i].toggle.isChecked()):
-				# ~ self.enabled_graphs.append(True)
-			# ~ else:
-				# ~ self.enabled_graphs.append(False)
 		enabled = []
 		for i in range(0,MAX_PLOTS):
 			if(self.toggles[i].toggle.isChecked()):
@@ -167,8 +160,7 @@ class MyPlot(QWidget):
 				enabled.append(False)		
 			
 		self.set_enabled_graphs(enabled)
-				
-			
+						
 		self.graph.on_plot_timer()										# calls the regular plot timer from graph.
 		
 	def plot_timer_start(self):											
@@ -240,7 +232,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		pg.setConfigOptions(antialias=False)							# antialiasing for nicer view. 
 		self.setBackground([70,70,70])									# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
-		self.setRange(xRange = [0,self.max_points], yRange = [-1200,1200]) # set default axes range
+		self.setRange(xRange = [0,self.max_points], yRange = [-1200,10000]) # set default axes range
 		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=10000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
 		legend = self.addLegend()
@@ -281,10 +273,9 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			#print(len(self.plot_subset))
 			self.dataset_changed = False
 			for i in range(len(self.plot_subset)):
-				print(self.enabled_graphs[i])
+				#print(self.enabled_graphs[i])
 				if(self.enabled_graphs[i] == True):
-					self.plot_refs[i].setData(self.plot_subset[i], name = "small penis") 		# required for update: reassign references to the plots
-					# self.plot_refs[i].setData(self.t, self.plot_subset[i])# required for update: reassign references to the plots
+					self.plot_refs[i].setData(self.plot_subset[i]) 		# required for update: reassign references to the plots
 				else:
 					self.plot_refs[i].setData([], name = "small penis")	# empty plot, if toggle not active.
 				
@@ -302,7 +293,7 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		
 		# class variables #
-		data_tick_ms = 500
+		data_tick_ms = 50
 
 		#creating a fixed size dataset #
 		dataset = []

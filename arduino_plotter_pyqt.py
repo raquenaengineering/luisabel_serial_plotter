@@ -120,7 +120,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 100
+POINTS_PER_PLOT = 100													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -622,33 +622,35 @@ class MainWindow(QMainWindow):
 		
 		if(self.recording == True):
 			print("saving data to file")
-			np_data = np.array(self.dataset)
-			np_data_t = np_data.transpose()
-			print("Data")
-			print(np_data)
-			print(SEPARATOR)
-			print("Transposed data")
-			print(np_data_t)
-			print(SEPARATOR)
-			with open(self.log_full_path, mode = 'a', newline = '') as csv_file:			# "log_file.csv" if will probably smash the data after first write!!!
-				dataset_writer = csv.writer(csv_file, delimiter = ',')		# standard way to write to csv file
-				for value in np_data_t:
+			# ~ np_data = np.array(self.dataset)
+			# ~ np_data_t = np_data.transpose()
+			# ~ print("Data")
+			# ~ print(np_data)
+			# ~ print(SEPARATOR)
+			# ~ print("Transposed data")
+			# ~ print(np_data_t)
+			# ~ print(SEPARATOR)
+			with open(self.log_full_path, mode = 'a', newline = '') as csv_file:	# "log_file.csv" if will probably smash the data after first write!!!
+				dataset_writer = csv.writer(csv_file, delimiter = ',')				# standard way to write to csv file
+				for value in self.dataset[0:POINTS_PER_PLOT]:						# only record the first "POINT_PER_PLOT" data points.
 					dataset_writer.writerow(value)
+		
 		t = time.time()
 		dt = t-t0
 		print(dt)
 		print(SEPARATOR)
 		
 		print("dataset lenght[0] on_record_timer():")
-		print(len(self.dataset[0]))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
+		print(len(self.dataset))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
 		print("dataset lenght on_timer")
-		print(len(self.dataset))
 		
 			
-		if(len(self.dataset[0]) > 2*POINTS_PER_PLOT):
-			#last_items = 
-			print("Dataset Cleaned")
-			self.clear_dataset()										# so we stop keeping track of all this data !!
+		if(len(self.dataset) > 3*POINTS_PER_PLOT):
+			print("Dataset removing some points")
+			self.dataset = self.dataset[POINTS_PER_PLOT:]
+			self.dataset.pop(POINTS_PER_PLOT)
+			print("dataset_length after removing some points")
+			print(len(self.dataset))
 	
 	def on_serial_timer(self):
 		
@@ -665,7 +667,7 @@ class MainWindow(QMainWindow):
 				mid_buffer = byte_buffer.decode('utf-8')
 			except Exception as e:
 				print (SEPARATOR)
-				#print(e)
+				#print(e)	
 				self.on_port_error(e)
 			else:
 				self.read_buffer = self.read_buffer + mid_buffer
@@ -697,21 +699,21 @@ class MainWindow(QMainWindow):
 				# add to a captions vector
 				text_vals = vals
 				self.plot_frame.set_channels_labels(text_vals)
-			# ~ for i in range(len(valsf)):									# this may not be the greatest option.
-				# ~ self.dataset[i].append(valsf[i])
-				# ~ print("dataset on the only part of the code where we add stuff to it")
-				# ~ print(self.dataset)
 			else:
-				for i in range(my_graph.MAX_PLOTS):							# this may not be the greatest option.
+				
+				self.dataset.append(valsf)								# appends all channels together
+				
+				for i in range(my_graph.MAX_PLOTS):						# this may not be the greatest option. it's fine.
 					try:
-						self.dataset[i].append(valsf[i])					# if valsf has only 4 elements, it will throw error at 5th	
-						self.plot_frame.toggles[i].setEnabled(True)			# enable all graphs conataining data
+						a = valsf[i]									# should crash after 4th element CHEAP FIX, MAKE IT BETTER !!!
+						#self.dataset[i].append(valsf[i])				# if valsf has only 4 elements, it will throw error at 5th	
+						self.plot_frame.toggles[i].setEnabled(True)		# enable all graphs conataining data
 									
-						if(self.first_toggles <= 2):							# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
+						if(self.first_toggles <= 2):					# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
 							self.plot_frame.toggles[i].setChecked(True)
 					except:
 						pass
-						self.dataset[i].append(0)
+						#self.dataset[i].append(0)
 					# ~ print("dataset on the only part of the code where we add stuff to it")
 					# ~ print(self.dataset)
 				self.first_toggles = self.first_toggles + 1
@@ -729,11 +731,12 @@ class MainWindow(QMainWindow):
 	
 	def clear_dataset(self):	
 		# initializing empty dataset #
-		for i in range(my_graph.MAX_PLOTS):	
-			self.dataset[i] = []
-		print("dataset after CLEAR-------------------------------------")
-		print(self.dataset)
-		print(SEPARATOR)
+		self.dataset = []
+		# ~ for i in range(my_graph.MAX_PLOTS):	
+			# ~ self.dataset[i] = []
+		# ~ print("dataset after CLEAR-------------------------------------")
+		# ~ print(self.dataset)
+		# ~ print(SEPARATOR)
 						
 	def on_port_error(self,e):											# triggered by the serial thread, shows a window saying port is used by sb else.
 
