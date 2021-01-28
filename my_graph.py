@@ -62,7 +62,7 @@ class LabelledAnimatedToggle(QWidget):
 class MyPlot(QWidget):
 					
 	n_plots = 12														# number of plots on the current plot. 
-	plot_tick_ms = 500													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
+	plot_tick_ms = 50													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	dataset = []														# complete dataset, this should go to a file.							
 	toggles = []														# references to the toggles which enable/disable plots.													
 	
@@ -166,8 +166,8 @@ class MyPlot(QWidget):
 	def plot_timer_start(self):											
 		self.graph.timer.start()
 
-	def update(self):													# 
-		self.graph.dataset_changed = True
+	def update(self):													# notifies a change in the dataset
+		self.graph.dataset_changed = True								# flag
 		
 	def setBackground(self, color):
 		self.graph.setBackground(color)
@@ -203,8 +203,9 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 	n_plots = 12														# number of plots on the current plot. 
 	first = True														# first iteration only creating the plots
 	
-	
-	dataset = None														# complete dataset, this should go to a file.							
+	dataset = None														# complete dataset, this should go to a file.	
+	np_dataset = None													# used for reverting the matrix.
+	np_dataset_t = None						
 	plot_refs = []														# references to the different added plots.
 	plot_subset = []
 	enabled_graphs = []													# enabled graphs ON GRAPH WINDOW, not on toggles. 
@@ -225,25 +226,24 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		self.dataset = dataset											# get the reference to the dataset given as input for the constructor
 		self.max_points = max_points
 			
-		self.plot_subset = self.dataset[:self.n_plots][-(self.max_points):]	 # get only the portion of the dataset which needs to be printed. 	
+		#self.plot_subset = self.dataset[:self.n_plots][-(self.max_points):]	 # get only the portion of the dataset which needs to be printed. 	
 			
 		super().__init__()		
 		pg.setConfigOptions(antialias=False)							# antialiasing for nicer view. 
 		self.setBackground([70,70,70])									# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
-		self.setRange(xRange = [0,self.max_points], yRange = [-1200,10000]) # set default axes range
-		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=10000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
+		self.setRange(xRange = [0,self.max_points], yRange = [-10,30]) # set default axes range
+		self.setLimits(xMin=0, xMax=self.max_points, yMin=-10, yMax=30)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
 		legend = self.addLegend()
-		self.setTitle(title)											# if title is wanted								
-
+		self.setTitle(title)											# if title is wanted	
+		
 	def create_plots(self):
-		for i in range (len(self.plot_subset)):
+		for i in range (MAX_PLOTS):
 			logging.debug("val of i:" + str(i))
 			p = self.plot(pen = (COLORS[i%24]))
 			self.plot_refs.append(p)
 
-			self.first = False
 
 	def clear_plot(self):												
 		print("clear_plot method called")
@@ -262,6 +262,8 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 
 		if self.first == True:											# FIRST: CREATE THE PLOTS 
 			self.create_plots()	
+			print("len(self.plot_refs)")
+			print(len(self.plot_refs))
 			self.first = False
 			print("First plot timer")
 		# SECOND: UPDATE THE PLOTS:
@@ -271,16 +273,31 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			#print("length of subset")
 			#print(len(self.plot_subset))
 			self.dataset_changed = False
+			
+			self.np_dataset = np.matrix(self.dataset)
+			self.np_dataset_t = self.np_dataset.transpose()
+			self.plot_subset = self.np_dataset_t.tolist()
+
+			# ~ print("self.dataset")
+			# ~ print(self.dataset)
+			# ~ print("self.np_dataset")
+			# ~ print(self.np_dataset)			
+			# ~ print("self.plot_subset")
+			# ~ for var in self.plot_subset:
+				# ~ print(var)	
+
+						
 			for i in range(len(self.plot_subset)):
-				#print(self.enabled_graphs[i])
+				# ~ print("len(self.plot_refs)")
+				# ~ print(len(self.plot_refs))
 				if(self.enabled_graphs[i] == True):
 					self.plot_refs[i].setData(self.plot_subset[i]) 		# required for update: reassign references to the plots
 				else:
-					self.plot_refs[i].setData([], name = "small penis")	# empty plot, if toggle not active.
+					self.plot_refs[i].setData([])	# empty plot, if toggle not active.
 				
 									
-			for i in range(0,self.n_plots):		
-				self.plot_subset[i] = self.dataset[i][-self.max_points:]	# gets the last "max_points" of the dataset.
+			# ~ for i in range(0,self.n_plots):		
+				# ~ self.plot_subset[i] = self.dataset[:][-self.max_points:]	# gets the last "max_points" of the dataset.
 			
 			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
 		
@@ -292,7 +309,7 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		
 		# class variables #
-		data_tick_ms = 500
+		data_tick_ms = 20
 
 		#creating a fixed size dataset #
 		dataset = []
@@ -301,11 +318,6 @@ if __name__ == "__main__":
 		def __init__(self):
 			
 			super().__init__()
-			
-
-			# initializing empty dataset #
-			for i in range(MAX_PLOTS):									# we're creating a dataset with an eXcess of rows!!!
-				self.dataset.append([])	
 
 			# add graph and show #
 			#self.graph = MyGraph(dataset = self.dataset)
@@ -329,33 +341,8 @@ if __name__ == "__main__":
 			self.data_timer.timeout.connect(self.on_data_timer)
 			self.data_timer.start(self.data_tick_ms)
 
-			self.plot.check_toggles([
-			True,
-			True,
-			True,
-			True,
-			True,
-			False,
-			False,
-			False,
-			False,
-			False,
-			False,
-			])
-
-			self.plot.enable_toggles([
-			True,
-			True,
-			True,
-			True,
-			True,
-			False,
-			False,
-			False,
-			False,
-			False,
-			False,
-			])
+			self.plot.check_toggles("all")
+			self.plot.enable_toggles("all")
 								
 
 
@@ -370,15 +357,15 @@ if __name__ == "__main__":
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.plot.dataset)))
 			
-			for j in range(10):
-				self.dataset[0].append(50*math.sin(j/4) + 80)
-			for i in range(1,MAX_PLOTS):
-				for j in range(10):
-					self.dataset[i].append(random.randrange(0,100))	
+			
+			line = []
+			for i in range(0,MAX_PLOTS):
+					line.append(random.randrange(0,100))	
+			self.dataset.append(line)
 					
-			print("self.dataset")
-			for data in self.dataset:
-				print(data)
+			# ~ print("self.dataset")
+			# ~ for data in self.dataset:
+				# ~ print(data)
 					
 				
 			self.plot.update()
