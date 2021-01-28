@@ -120,7 +120,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 100													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+POINTS_PER_PLOT = 1000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -441,7 +441,7 @@ class MainWindow(QMainWindow):
 		self.textbox_send_command.setEnabled(True)
 		self.button_pause.setEnabled(True)
 		self.record_timer.start()
-
+		self.plot_frame.dataset = self.dataset
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
 		self.on_button_play()
@@ -518,6 +518,8 @@ class MainWindow(QMainWindow):
 		self.plot_frame.clear_plot()									# clear plot
 		self.clear_dataset()
 		self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
+		print("self.plot_frame.dataset")
+		print(self.plot_frame.dataset)
 		self.plot_frame.clear_channels_labels()
 		self.plot_frame.check_toggles("none")
 		self.plot_frame.enable_toggles("none")
@@ -620,6 +622,10 @@ class MainWindow(QMainWindow):
 		print("on_record_timer method called:")	
 		t0 = time.time()
 		
+			# ~ print("self.dataset")
+			# ~ for line in self.dataset:
+				# ~ print(line)
+		
 		if(self.recording == True):
 			print("saving data to file")
 			# ~ np_data = np.array(self.dataset)
@@ -645,13 +651,18 @@ class MainWindow(QMainWindow):
 		print("dataset lenght on_timer")
 		
 			
-		if(len(self.dataset) > 3*POINTS_PER_PLOT):
+		if(len(self.dataset) > 3*POINTS_PER_PLOT):						# this ensures there's always enough data to plot the whole window.
 			print("Dataset removing some points")
-			self.dataset = self.dataset[POINTS_PER_PLOT:]
-			self.dataset.pop(POINTS_PER_PLOT)
+			# ~ for i in range(POINTS_PER_PLOT-1):
+				# ~ self.dataset.pop()
+			print(len(self.dataset))
+			self.dataset = self.dataset[POINTS_PER_PLOT:]				# removes the first "POINTS_PER_PLOT" values from the dataset.
+			print(len(self.dataset))
+			self.plot_frame.dataset = self.dataset
+			#self.clear_dataset()	# doesn't make any difference
+			self.plot_frame.dataset_changed = True						# if we remove a part of the dataset, it is indeed changing. 
 			print("dataset_length after removing some points")
 			print(len(self.dataset))
-	
 	def on_serial_timer(self):
 		
 		byte_buffer = ''
@@ -723,8 +734,8 @@ class MainWindow(QMainWindow):
 	
 	def init_dataset(self):
 		self.dataset = []
-		for i in range(my_graph.MAX_PLOTS):	
-			self.dataset.append([])
+		# ~ for i in range(my_graph.MAX_PLOTS):	
+			# ~ self.dataset.append([])
 		print("dataset after INIT--------------------------------------")
 		print(self.dataset)
 		print(SEPARATOR)
