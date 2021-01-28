@@ -62,7 +62,7 @@ class LabelledAnimatedToggle(QWidget):
 class MyPlot(QWidget):
 					
 	n_plots = 12														# number of plots on the current plot. 
-	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
+	plot_tick_ms = 500													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	dataset = []														# complete dataset, this should go to a file.							
 	toggles = []														# references to the toggles which enable/disable plots.													
 	
@@ -202,7 +202,6 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 	tvec = []															# independent variable, with "max_points" points.			
 	n_plots = 12														# number of plots on the current plot. 
 	first = True														# first iteration only creating the plots
-	plot_tick_ms = 20													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
 	
 	
 	dataset = None														# complete dataset, this should go to a file.							
@@ -293,7 +292,7 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		
 		# class variables #
-		data_tick_ms = 50
+		data_tick_ms = 500
 
 		#creating a fixed size dataset #
 		dataset = []
@@ -371,11 +370,15 @@ if __name__ == "__main__":
 			t0 = time.time()
 			logging.debug("length of dataset: " + str(len(self.plot.dataset)))
 			
-			for j in range(50):
+			for j in range(10):
 				self.dataset[0].append(50*math.sin(j/4) + 80)
 			for i in range(1,MAX_PLOTS):
-				for j in range(50):
+				for j in range(10):
 					self.dataset[i].append(random.randrange(0,100))	
+					
+			print("self.dataset")
+			for data in self.dataset:
+				print(data)
 					
 				
 			self.plot.update()
