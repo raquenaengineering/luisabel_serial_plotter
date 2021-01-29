@@ -120,7 +120,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 1000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+POINTS_PER_PLOT = 20													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -651,7 +651,7 @@ class MainWindow(QMainWindow):
 		print("dataset lenght on_timer")
 		
 			
-		if(len(self.dataset) > 3*POINTS_PER_PLOT):						# this ensures there's always enough data to plot the whole window.
+		while(len(self.dataset) > 3*POINTS_PER_PLOT):					# this ensures there's always enough data to plot the whole window.
 			print("Dataset removing some points")
 			# ~ for i in range(POINTS_PER_PLOT-1):
 				# ~ self.dataset.pop()
