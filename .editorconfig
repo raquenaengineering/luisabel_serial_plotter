@@ -1,0 +1,5 @@
+
+# tab indentation set to 4 spaces
+[*.py]
+indent_style = tab
+indent_size = 4
