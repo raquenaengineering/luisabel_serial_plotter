@@ -160,6 +160,8 @@ class MyPlot(QWidget):
 				enabled.append(False)		
 			
 		self.set_enabled_graphs(enabled)
+		
+		self.graph.dataset = self.dataset
 						
 		self.graph.on_plot_timer()										# calls the regular plot timer from graph.
 		
@@ -168,6 +170,7 @@ class MyPlot(QWidget):
 
 	def update(self):													# notifies a change in the dataset
 		self.graph.dataset_changed = True								# flag
+		#self.graph.dataset = self.dataset
 		
 	def setBackground(self, color):
 		self.graph.setBackground(color)
@@ -266,6 +269,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			print(len(self.plot_refs))
 			self.first = False
 			print("First plot timer")
+
 		# SECOND: UPDATE THE PLOTS:
 		
 		if(self.dataset_changed == True):								# redraw only if there are changes on the dataset
@@ -274,10 +278,13 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 			#print(len(self.plot_subset))
 			self.dataset_changed = False
 			
-			self.np_dataset = np.matrix(self.dataset)
+			self.np_dataset = np.matrix(self.dataset[:][-self.max_points:])		# we only use as subset the last max_points
 			self.np_dataset_t = self.np_dataset.transpose()
 			self.plot_subset = self.np_dataset_t.tolist()
+			# ~ print("len(self.plot_subset[0])")
+			# ~ print(len(self.plot_subset[0]))
 
+			
 			# ~ print("self.dataset")
 			# ~ print(self.dataset)
 			# ~ print("self.np_dataset")
@@ -295,9 +302,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 				else:
 					self.plot_refs[i].setData([])	# empty plot, if toggle not active.
 				
-									
-			# ~ for i in range(0,self.n_plots):		
-				# ~ self.plot_subset[i] = self.dataset[:][-self.max_points:]	# gets the last "max_points" of the dataset.
+				self.dataset_changed = True
 			
 			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
 		
