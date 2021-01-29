@@ -1,0 +1,11 @@
+full screen, f
+Connect, c
+Disconnect, d
+Play, y
+Pause, p
+Record, r
+Stop, -
+Wider Y axis, Arrow up
+Narower Y axis, Arrow down
+Wider X axis, Arrow Left
+Narrower X axis, Arrow Right
