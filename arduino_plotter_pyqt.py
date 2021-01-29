@@ -71,7 +71,7 @@ from PyQt5.QtCore import(
 
 # GLOBAL VARIABLES #
 
-SERIAL_BUFFER_SIZE = 5000												# buffer size to store the incoming data from serial, to afterwards process it.
+SERIAL_BUFFER_SIZE = 10000												# buffer size to store the incoming data from serial, to afterwards process it.
 SEPARATOR = "----------------------------------------------------------"
 
 
@@ -120,7 +120,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 20													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+POINTS_PER_PLOT = 1000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -579,36 +579,36 @@ class MainWindow(QMainWindow):
 	def on_arrow_up(self):
 		print("on_arrow_up method called")
 		# change y axis from plot
-		y_axis = self.plot_frame.getAxis('left').range
+		y_axis = self.plot_frame.graph.getAxis('left').range
 		print(y_axis)
 		for i in range(len(y_axis)):
 			y_axis[i] = y_axis[i]/2
-		self.plot_frame.setRange(yRange = y_axis)
+		self.plot_frame.graph.setRange(yRange = y_axis)
 		
 	def on_arrow_down(self):
 		print("on_arrow_down method called")		
 		# change y axis from plot
-		y_axis = self.plot_frame.getAxis('left').range
+		y_axis = self.plot_frame.graph.getAxis('left').range
 		print(y_axis)
 		for i in range(len(y_axis)):
 			y_axis[i] = y_axis[i]*2
-		self.plot_frame.setRange(yRange = y_axis)		
+		self.plot_frame.graph.setRange(yRange = y_axis)		
 	
 	def on_arrow_left(self):
 		print("on_arrow_left method called")
-		x_axis = self.plot_frame.getAxis('bottom').range
+		x_axis = self.plot_frame.graph.getAxis('bottom').range
 		print(x_axis)
 		for i in range(len(x_axis)):
 			x_axis[i] = x_axis[i]/2
-		self.plot_frame.setRange(xRange = x_axis)			
+		self.plot_frame.graph.setRange(xRange = x_axis)			
 
 	def on_arrow_right(self):
 		print("on_arrow_right method called")
-		x_axis = self.plot_frame.getAxis('bottom').range
+		x_axis = self.plot_frame.graph.getAxis('bottom').range
 		print(x_axis)
 		for i in range(len(x_axis)):
 			x_axis[i] = x_axis[i]*2
-		self.plot_frame.setRange(xRange = x_axis)	
+		self.plot_frame.graph.setRange(xRange = x_axis)	
 
 
 	def start_recording(self):
@@ -734,20 +734,12 @@ class MainWindow(QMainWindow):
 	
 	def init_dataset(self):
 		self.dataset = []
-		# ~ for i in range(my_graph.MAX_PLOTS):	
-			# ~ self.dataset.append([])
-		print("dataset after INIT--------------------------------------")
-		print(self.dataset)
-		print(SEPARATOR)
+
 	
 	def clear_dataset(self):	
 		# initializing empty dataset #
 		self.dataset = []
-		# ~ for i in range(my_graph.MAX_PLOTS):	
-			# ~ self.dataset[i] = []
-		# ~ print("dataset after CLEAR-------------------------------------")
-		# ~ print(self.dataset)
-		# ~ print(SEPARATOR)
+
 						
 	def on_port_error(self,e):											# triggered by the serial thread, shows a window saying port is used by sb else.
 

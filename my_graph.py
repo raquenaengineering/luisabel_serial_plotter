@@ -235,8 +235,8 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		pg.setConfigOptions(antialias=False)							# antialiasing for nicer view. 
 		self.setBackground([70,70,70])									# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
-		self.setRange(xRange = [0,self.max_points], yRange = [-10,30]) # set default axes range
-		self.setLimits(xMin=0, xMax=self.max_points, yMin=-10, yMax=30)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
+		self.setRange(xRange = [0,self.max_points], yRange = [-10,100]) 	# set default axes range
+		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=1000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
 		legend = self.addLegend()
 		self.setTitle(title)											# if title is wanted	
@@ -368,11 +368,12 @@ if __name__ == "__main__":
 					line.append(random.randrange(0,100))	
 			self.dataset.append(line)
 					
-			# ~ print("self.dataset")
-			# ~ for data in self.dataset:
-				# ~ print(data)
+			print("self.dataset")
+			for data in self.dataset:
+				print(data)
+			
+			self.plot.dataset = self.dataset							# this SHOULD HAPPEN INTERNAL TO THE CLASS !!!
 					
-				
 			self.plot.update()
 			t = time.time()
 			dt = t - t0
