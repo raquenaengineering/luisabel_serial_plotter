@@ -466,7 +466,7 @@ class MainWindow(QMainWindow):
 		try:															# try to establish serial connection 
 			self.serial_port = serial.Serial(							# serial constructor
 				port=port_name, 
-				baudrate= mw.serial_baudrate,		
+				baudrate= self.serial_baudrate,		
 				#baudrate = 115200,
 				#bytesize=EIGHTBITS, 
 				#parity=PARITY_NONE, 
@@ -939,9 +939,9 @@ class MainWindow(QMainWindow):
 				self.on_button_record()				
 				
 										
-
+# ~ if __name__ == '__main__':
 		
-app = QApplication(sys.argv)
-app.setStyle("Fusion")													# required to use it here
-mw = MainWindow()
-app.exec_()
+	# ~ app = QApplication(sys.argv)
+	# ~ app.setStyle("Fusion")													# required to use it here
+	# ~ mw = MainWindow()
+	# ~ app.exec_()
