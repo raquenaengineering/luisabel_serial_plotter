@@ -233,24 +233,24 @@ class MainWindow(QMainWindow):
 		self.layoutV1.addLayout(self.layout_player)
 		# play button # 
 		self.button_play = QPushButton("Play")
-		self.button_play.setIcon(QIcon('player_icons/131.png'))
+		self.button_play.setIcon(QIcon('resources/player_icons/131.png'))
 		self.button_play.clicked.connect(self.on_button_play)
 		self.button_play.setEnabled(False)
 		self.layout_player.addWidget(self.button_play)
 		# pause button # 
 		self.button_pause = QPushButton("Pause")
-		self.button_pause.setIcon(QIcon('player_icons/141.png'))
+		self.button_pause.setIcon(QIcon('resources/player_icons/141.png'))
 		self.button_pause.clicked.connect(self.on_button_pause)
 		self.button_pause.setEnabled(False)
 		self.layout_player.addWidget(self.button_pause)
 		# record button # 
 		self.button_record = QPushButton("Record")
-		self.button_record.setIcon(QIcon('player_icons/148.png'))
+		self.button_record.setIcon(QIcon('resources/player_icons/148.png'))
 		self.button_record.clicked.connect(self.on_button_record)		# enables timer to periodically store the data onto a file. 
 		self.layout_player.addWidget(self.button_record)		
 		# stop button # 
 		self.button_stop = QPushButton("Stop")
-		self.button_stop.setIcon(QIcon('player_icons/142.png'))
+		self.button_stop.setIcon(QIcon('resources/player_icons/142.png'))
 		self.button_stop.clicked.connect(self.on_button_stop)			# enables timer to periodically store the data onto a file. 
 		self.button_stop.setEnabled(False)
 		self.layout_player.addWidget(self.button_stop)
