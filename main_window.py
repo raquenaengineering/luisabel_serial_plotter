@@ -166,6 +166,12 @@ class MainWindow(QMainWindow):
 		self.serial_timer.timeout.connect(self.on_serial_timer)
 		self.serial_timer.start(50)										# period needs to be relatively short
 		self.serial_timer.stop()										# by default the timer will be off, enabled by connect.
+		# update serial ports timer #
+		self.update_ports_timer = QTimer()
+		self.update_ports_timer.timeout.connect(
+			self.update_serial_ports)									# updating serial port list in a regular time basis. 
+		self.update_ports_timer.start(3000)								# every  3 seconds seems reasonable. 						
+			
 
 		# shortcuts moved to the bottom #
 
