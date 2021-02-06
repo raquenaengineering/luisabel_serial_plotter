@@ -964,7 +964,18 @@ class MainWindow(QMainWindow):
 			elif event.text() == 'y':
 				self.on_button_play()
 			elif event.text() == 'r':
-				self.on_button_record()				
+				self.on_button_record()	
+			elif event.text() == 'a':
+				self.on_button_autoscale()
+			# numbers # 
+			elif event.text() == 'º':
+				print("enable all")
+				self.plot_frame.check_toggles("all")					# this can't be done 
+			elif event.text() == '0':									# toggles plots all/none
+				self.plot_frame.check_toggles("none")
+				
+			
+				
 				
 										
 if __name__ == '__main__':

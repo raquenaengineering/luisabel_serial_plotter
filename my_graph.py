@@ -92,15 +92,18 @@ class MyPlot(QWidget):
 		else:
 			pass			# fill with behavior if val is a vector
 		
-	def check_toggles(self,val):
-		if(val == "all"):
+	def check_toggles(self,vals):
+		if(vals == "all"):
 			for i in range(MAX_PLOTS):
-				self.toggles[i].setChecked(True)
-		elif(val == "none"):
+				print(self.toggles[i].isEnabled())
+				if(self.toggles[i].isEnabled()):						# so we can only check enabled toggles. 
+					self.toggles[i].setChecked(True)
+		elif(vals == "none"):
 			for i in range(MAX_PLOTS):
 				self.toggles[i].setChecked(False) 
 		else:
-			pass
+			for i in range (MAX_PLOTS):
+				self.toggles[i].setChecked(vals[i])						# vals should be a list with as many elements as toggles
 		
 	def set_channels_labels(self,names):								# each channel toggle has a label, set the text on that label.
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
