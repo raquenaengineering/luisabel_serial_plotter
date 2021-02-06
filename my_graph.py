@@ -21,6 +21,7 @@ from PyQt5.QtCore import(
 )
 import pyqtgraph as pg
 import qtwidgets
+from labelled_animated_toggle import *
 
 COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",
@@ -29,35 +30,6 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
 
-class LabelledAnimatedToggle(QWidget):
-	
-	def __init__(self,color = "#aaffaa", label_text = ""):				# optional parameters instead ??? yes, thanks.
-		super().__init__()
-		self.label = QLabel(label_text)
-		self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
-		
-		self.layout = QHBoxLayout()
-		self.setLayout(self.layout)
-		self.layout.addWidget(self.toggle)
-		self.layout.addWidget(self.label)
-		self.layout.setContentsMargins(0,0,0,0)							# reducing the space the toggle takes as much as possible	
-		self.layout.setSpacing(0)
-		
-	def setLabel(self,label_text):
-		self.label.setText(label_text)	
-	def getLabel(self):
-		label = self.label.text()
-		return(label)
-		
-	def setChecked(self, val):
-		self.toggle.setChecked(val)
-	def isChecked(self):
-		return(self.toggle.isChecked())
-		
-	def setEnabled(self, val):
-		self.toggle.setEnabled(val)
-	def isEnabled(self):
-		return(self.toggle.isEnabled())
 		
 class MyPlot(QWidget):
 					

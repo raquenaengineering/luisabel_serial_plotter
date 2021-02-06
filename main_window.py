@@ -25,6 +25,7 @@ from my_graph import MyGraph						# custom graph based om pyqtgraph, as a module
 from my_graph import MyPlot
 import my_graph										# for the global variables of the namespace.
 from shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
+from labelled_animated_toggle import LabelledAnimatedToggle
 
 
 # qt imports #
@@ -254,6 +255,14 @@ class MainWindow(QMainWindow):
 		self.button_stop.clicked.connect(self.on_button_stop)			# enables timer to periodically store the data onto a file. 
 		self.button_stop.setEnabled(False)
 		self.layout_player.addWidget(self.button_stop)
+		# autoscale #
+		self.button_autoscale = QPushButton("Autoscale")
+		self.button_autoscale.setCheckable(True)
+		self.button_autoscale.clicked.connect(self.on_button_autoscale)
+		self.layout_player.addWidget(self.button_autoscale)
+		# ~ self.autoscale_toggle = LabelledAnimatedToggle(color = "#ffffff",label_text = "Autoscale")
+		# ~ self.layout_player.addWidget(self.autoscale_toggle)
+				
 				
 		# buttons / menus # 
 		self.layoutH1 = QHBoxLayout()
@@ -569,6 +578,19 @@ class MainWindow(QMainWindow):
 		#self.log_file.close()
 		self.button_stop.setEnabled(False)
 		self.button_record.setEnabled(True)
+		
+	def on_button_autoscale(self):
+		if self.button_autoscale.isChecked():							# if checked, we uncheck and disable autoscale.
+			print("Autorange enabled")
+			self.plot_frame.graph.enableAutoRange(axis='y')	
+			self.plot_frame.graph.setAutoVisible(y=True)				# don't know what's this
+			self.button_autoscale.setChecked(True)
+
+		else:
+			print("Autorange disabled")
+			self.button_autoscale.setEnabled(True)
+			self.button_autoscale.setChecked(False)
+
 					
 	def on_port_select(self,port_name):									# callback when COM port is selected at the menu.
 		#1. get the selected port name via the text. 
@@ -945,9 +967,9 @@ class MainWindow(QMainWindow):
 				self.on_button_record()				
 				
 										
-# ~ if __name__ == '__main__':
+if __name__ == '__main__':
 		
-	# ~ app = QApplication(sys.argv)
-	# ~ app.setStyle("Fusion")													# required to use it here
-	# ~ mw = MainWindow()
-	# ~ app.exec_()
+	app = QApplication(sys.argv)
+	app.setStyle("Fusion")													# required to use it here
+	mw = MainWindow()
+	app.exec_()
