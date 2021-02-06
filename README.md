@@ -26,7 +26,9 @@ pip install qtwidgets
 Is such a great tool!
 + Developers who ported QT5 to python :
 Even better when it's so easy to develop!
-+ Luke Campagnola(@campagnola):
++ [PyqtGraph Developers](https://github.com/pyqtgraph/pyqtgraph):
 This tool wouldn't have been possible without his fantastic pyqtgraph library.
-+ Martin Fitzpatrick(@mfitzp):
++ [Martin Fitzpatrick](https://github.com/mfitzp):
 For writing qtwidgets, and also for his book about PyQt5.
++ [Yusuke Kamiyamane](https://p.yusukekamiyamane.com/):
+For the icons.
