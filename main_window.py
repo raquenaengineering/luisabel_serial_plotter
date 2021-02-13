@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
 		self.button_stop.setEnabled(False)
 		self.layout_player.addWidget(self.button_stop)
 		# autoscale #
-		self.button_autoscale = QPushButton("Autoscale")
+		self.button_autoscale = QPushButton("Scale Fit")
 		self.button_autoscale.setCheckable(True)
 		self.button_autoscale.clicked.connect(self.on_button_autoscale)
 		self.layout_player.addWidget(self.button_autoscale)
@@ -580,16 +580,16 @@ class MainWindow(QMainWindow):
 		self.button_record.setEnabled(True)
 		
 	def on_button_autoscale(self):
-		if self.button_autoscale.isChecked():							# if checked, we uncheck and disable autoscale.
+		# if self.button_autoscale.isChecked():							# if checked, we uncheck and disable autoscale.
 			print("Autorange enabled")
-			self.plot_frame.graph.enableAutoRange(axis='y')	
+			self.plot_frame.graph.enableAutoRange(axis='y')
 			self.plot_frame.graph.setAutoVisible(y=True)				# don't know what's this
-			self.button_autoscale.setChecked(True)
+			#self.button_autoscale.setChecked(True)
 
-		else:
-			print("Autorange disabled")
-			self.button_autoscale.setEnabled(True)
-			self.button_autoscale.setChecked(False)
+		# else:
+		# 	print("Autorange disabled")
+		# 	self.button_autoscale.setEnabled(True)
+		# 	self.button_autoscale.setChecked(False)
 
 					
 	def on_port_select(self,port_name):									# callback when COM port is selected at the menu.

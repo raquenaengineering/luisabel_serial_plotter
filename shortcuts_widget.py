@@ -105,7 +105,7 @@ class ShortcutsWidget(QWidget):											# this is supposed to be the python co
 	def load_shortcuts(self):
 		print("load_shortcuts method called:")
 		# ~ # should open a popup window to select the file #
-		with open("shortcuts.txt") as sc_file:
+		with open("resources/shortcuts.txt") as sc_file:
 			csv_reader = csv.reader(sc_file,delimiter = ',')
 			for row in csv_reader:
 				self.actions.append(row[0])								# is this the use of a dictiorary?
