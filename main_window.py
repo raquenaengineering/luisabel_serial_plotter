@@ -96,28 +96,28 @@ SEPARATOR = "----------------------------------------------------------"
 # ~ ]
 
 SERIAL_SPEEDS = [
-"300",
-"1200",
-"2400",
-"4800",
-"9600",
-"19200",
-"38400",
-"57600",
-"74880",
-"115200",
-"230400",
-"250000",
-"500000",
-"1000000",
-"2000000"
+	"300",
+	"1200",
+	"2400",
+	"4800",
+	"9600",
+	"19200",
+	"38400",
+	"57600",
+	"74880",
+	"115200",
+	"230400",
+	"250000",
+	"500000",
+	"1000000",
+	"2000000"
 ]
 
 ENDLINE_OPTIONS = [
-"No Line Adjust",
-"New Line",
-"Carriage Return",
-"Both NL & CR"
+	"No Line Adjust",
+	"New Line",
+	"Carriage Return",
+	"Both NL & CR"
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
@@ -171,7 +171,8 @@ class MainWindow(QMainWindow):
 		self.update_ports_timer = QTimer()
 		self.update_ports_timer.timeout.connect(
 			self.update_serial_ports)									# updating serial port list in a regular time basis. 
-		self.update_ports_timer.start(3000)								# every  3 seconds seems reasonable. 						
+		self.update_ports_timer.start(3000)								# every  3 seconds seems reasonable.
+		self.update_ports_timer.stop()
 			
 
 		# shortcuts moved to the bottom #
@@ -257,7 +258,7 @@ class MainWindow(QMainWindow):
 		self.layout_player.addWidget(self.button_stop)
 		# autoscale #
 		self.button_autoscale = QPushButton("Scale Fit")
-		self.button_autoscale.setCheckable(True)
+		#self.button_autoscale.setCheckable(True)
 		self.button_autoscale.clicked.connect(self.on_button_autoscale)
 		self.layout_player.addWidget(self.button_autoscale)
 		# ~ self.autoscale_toggle = LabelledAnimatedToggle(color = "#ffffff",label_text = "Autoscale")
@@ -365,9 +366,11 @@ class MainWindow(QMainWindow):
 		command = self.textbox_send_command.text()						# get what's on the textbox. 
 		self.textbox_send_command.setText("")		
 		# here the serial send command # 
-		self.serial_message_to_send = command							# this should have effect on the serial_thread
+		self.serial_message_to_send = command.encode('utf-8')					# this should have effect on the serial_thread
+
 		logging.debug("serial_message_to_send")
 		logging.debug(self.serial_message_to_send)
+		self.serial_port.write(self.serial_message_to_send)
 	
 	# other methods # 
 		
@@ -516,11 +519,23 @@ class MainWindow(QMainWindow):
 	def start_serial(self):
 		# first ensure connection os properly made
 		self.serial_connect(self.serial_port_name)
-
 		# 2. move status to connected 
 		# 3. start the timer to collect the data
-		self.serial_timer.start()			
-		
+		self.serial_timer.start()
+		# 4. Initialization stuff required by the remote serial device:
+		self.init_emg_sensor()
+
+	def init_emg_sensor(self):
+		# initialization stuff (things required for the sensors to start sending shit)
+		message = "E=1;"														# enable EMG data.
+		self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+		logging.debug(self.serial_message_to_send)
+		self.serial_port.write(self.serial_message_to_send)
+		message = "START;"
+		self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+		logging.debug(self.serial_message_to_send)
+		self.serial_port.write(self.serial_message_to_send)
+
 	def on_button_disconnect_click(self):
 		print("Disconnect Button Clicked")
 		self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
@@ -692,7 +707,12 @@ class MainWindow(QMainWindow):
 			print("dataset_length after removing some points")
 			print(len(self.dataset))
 	def on_serial_timer(self):
-		
+		#self.add_arduino_data()
+		self.add_emg_sensor_data()
+
+
+	def add_arduino_data(self):
+
 		byte_buffer = ''
 		mid_buffer = ''
 
@@ -700,36 +720,38 @@ class MainWindow(QMainWindow):
 			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
 		except Exception as e:
 			self.on_port_error(e)
-			self.on_button_disconnect_click()									# we've crashed the serial, so disconnect and REFRESH PORTS!!!
-		else:															# if except doens't happen	
+			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
+		else:															# if except doens't happen
+			#self.add_arduino_data(byte_buffer)
+
 			try:
 				mid_buffer = byte_buffer.decode('utf-8')
 			except Exception as e:
-				print (SEPARATOR)
-				#print(e)	
+				print(SEPARATOR)
+				# print(e)
 				self.on_port_error(e)
 			else:
 				self.read_buffer = self.read_buffer + mid_buffer
 				data_points = self.read_buffer.split(self.endline)
-				self.read_buffer = data_points[-1]							# clean the buffer, saving the non completed data_points
+				self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
 				a = data_points[:-1]
-				for data_point in a:										# so all data points except last. 
-					self.add_arduino_data(data_point)
-						
-	def add_arduino_data(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
+				for data_point in a:  # so all data points except last.
+					self.arduino_parse(data_point)
 
-		vals = readed.replace(' ',',')									# replace empty spaces for commas. 
+	def arduino_parse(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
+
+		vals = readed.replace(' ',',')									# replace empty spaces for commas.
 		vals = vals.split(',')											# arduino serial plotter splits with both characters.
 
 		valsf = []
-		
+
 		self.plot_frame.n_plots = 5
-	
+
 		if(vals[0] == ''):
 			self.timeouts = self.timeouts + 1
 			print("Timeout")
 			print("Total number of timeouts: "+ str(self.timeouts))
-		else:	
+		else:
 			try:
 				for val in vals:
 					valsf.append(float(val))
@@ -739,27 +761,45 @@ class MainWindow(QMainWindow):
 				text_vals = vals
 				self.plot_frame.set_channels_labels(text_vals)
 			else:
-				
-				self.dataset.append(valsf)								# appends all channels together
-				
-				for i in range(my_graph.MAX_PLOTS):						# this may not be the greatest option. it's fine.
-					try:
-						a = valsf[i]									# should crash after 4th element CHEAP FIX, MAKE IT BETTER !!!
-						#self.dataset[i].append(valsf[i])				# if valsf has only 4 elements, it will throw error at 5th	
-						self.plot_frame.toggles[i].setEnabled(True)		# enable all graphs conataining data
-									
-						if(self.first_toggles <= 2):					# THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
-							self.plot_frame.toggles[i].setChecked(True)
-					except:
-						pass
-						#self.dataset[i].append(0)
-					# ~ print("dataset on the only part of the code where we add stuff to it")
-					# ~ print(self.dataset)
-				self.first_toggles = self.first_toggles + 1
-					
+				self.add_values_to_dataset(valsf)
+
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
-	
+
+	def add_values_to_dataset(self,values):
+		print("values =")
+		print(values)
+		self.dataset.append(values)  # appends all channels together
+		# enabling corresponding toggles #
+		for i in range(my_graph.MAX_PLOTS):  # this may not be the greatest option. it's fine.
+			try:
+				a = values[i]  # should crash after 4th element CHEAP FIX, MAKE IT BETTER !!!
+				# self.dataset[i].append(valsf[i])				# if valsf has only 4 elements, it will throw error at 5th
+				self.plot_frame.toggles[i].setEnabled(True)  # enable all graphs conataining data
+
+				if (
+					self.first_toggles <= 2):  # THIS SHOULD BE IF NO DATA ON DATASET[I], OR ONLY ONE ELEMENT ON DATASET[I]
+					self.plot_frame.toggles[i].setChecked(True)
+			except:
+				pass
+		# self.dataset[i].append(0)
+		# ~ print("dataset on the only part of the code where we add stuff to it")
+		# ~ print(self.dataset)
+		self.first_toggles = self.first_toggles + 1
+
+	def add_emg_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
+		num = True
+		vals = []
+		while(num != 0):
+			byte = self.serial_port.read()
+			num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
+			vals.append(num)
+		self.add_values_to_dataset(vals)
+		return(vals)
+
+
+		#num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
+
 	def init_dataset(self):
 		self.dataset = []
 
@@ -911,7 +951,7 @@ class MainWindow(QMainWindow):
 				#b.currentTextChanged.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))
 		
 		else:
-				self.noserials = serial_port_menu.addAction("No serial Ports detected")
+				self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
 				self.noserials.setDisabled(True)
 
 
@@ -965,7 +1005,7 @@ class MainWindow(QMainWindow):
 				self.on_button_play()
 			elif event.text() == 'r':
 				self.on_button_record()	
-			elif event.text() == 'a':
+			elif event.text() == 's':
 				self.on_button_autoscale()
 			# numbers # 
 			elif event.text() == 'º':
@@ -973,8 +1013,6 @@ class MainWindow(QMainWindow):
 				self.plot_frame.check_toggles("all")					# this can't be done 
 			elif event.text() == '0':									# toggles plots all/none
 				self.plot_frame.check_toggles("none")
-				
-			
 				
 				
 										
