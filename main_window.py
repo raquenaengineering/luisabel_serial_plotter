@@ -527,14 +527,15 @@ class MainWindow(QMainWindow):
 
 	def init_emg_sensor(self):
 		# initialization stuff (things required for the sensors to start sending shit)
-		message = "E=1;"														# enable EMG data.
-		self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
-		logging.debug(self.serial_message_to_send)
-		self.serial_port.write(self.serial_message_to_send)
-		message = "START;"
-		self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
-		logging.debug(self.serial_message_to_send)
-		self.serial_port.write(self.serial_message_to_send)
+		# message = "E=1;"														# enable EMG data.
+		# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+		# logging.debug(self.serial_message_to_send)
+		# self.serial_port.write(self.serial_message_to_send)
+		# message = "START;"
+		# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+		# logging.debug(self.serial_message_to_send)
+		# self.serial_port.write(self.serial_message_to_send)
+		pass
 
 	def on_button_disconnect_click(self):
 		print("Disconnect Button Clicked")
@@ -767,8 +768,9 @@ class MainWindow(QMainWindow):
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 
 	def add_values_to_dataset(self,values):
-		print("values =")
-		print(values)
+		print("Dataset")
+		# print("values =")
+		# print(values)
 		self.dataset.append(values)  # appends all channels together
 		# enabling corresponding toggles #
 		for i in range(my_graph.MAX_PLOTS):  # this may not be the greatest option. it's fine.
@@ -782,10 +784,8 @@ class MainWindow(QMainWindow):
 					self.plot_frame.toggles[i].setChecked(True)
 			except:
 				pass
-		# self.dataset[i].append(0)
-		# ~ print("dataset on the only part of the code where we add stuff to it")
-		# ~ print(self.dataset)
-		self.first_toggles = self.first_toggles + 1
+
+		self.first_toggles = self.first_toggles + 1				# ???
 
 	def add_emg_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
 		num = True
@@ -793,9 +793,14 @@ class MainWindow(QMainWindow):
 		while(num != 0):
 			byte = self.serial_port.read()
 			num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
+			num = float(num)
 			vals.append(num)
-		self.add_values_to_dataset(vals)
-		return(vals)
+		vals = vals[:-1]										# remove the final zero
+		if(len(vals) > 1):										# bad trick to remove zero data value array !!!
+			self.add_values_to_dataset(vals)
+			self.plot_frame.update()
+			#return(vals)
+
 
 
 		#num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
@@ -954,17 +959,12 @@ class MainWindow(QMainWindow):
 				self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
 				self.noserials.setDisabled(True)
 
-
 	def shortcut_preferences(self):
 		self.shortcuts = ShortcutsWidget()							# needs to be self, or it won't persist
 		#0. should be done on init(): Load the shortcuts from a file where they're stored ¿in json format?
 		#1. get the current shortcuts (stored somewhere in a variable, which also needs to be created(USE DICTIONARY))
 		#2. create a widget containing a table with all the shortcuts and their shortcut value. 
 		# 
-
-
-
-
 
 	def full_screen(self):												# it should be able to be detected from window class !!!
 		if self.full_screen_flag == False:								
@@ -1013,8 +1013,7 @@ class MainWindow(QMainWindow):
 				self.plot_frame.check_toggles("all")					# this can't be done 
 			elif event.text() == '0':									# toggles plots all/none
 				self.plot_frame.check_toggles("none")
-				
-				
+
 										
 if __name__ == '__main__':
 		
