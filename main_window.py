@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
 		self.setPalette(self.palette)
 		
 		# window stuff #
-		self.setWindowTitle("Luisabel Serial Plotter")					# relevant title 
+		self.setWindowTitle("Luisabel EMG Plotter")					# relevant title
 		self.setWindowIcon(QIcon("RE_logo_32p.png"))					# basic raquena engineering branding
 		self.resize(1200,800)											# setting initial window size
 		# menubar #
