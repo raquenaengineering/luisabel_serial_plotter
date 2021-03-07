@@ -76,25 +76,6 @@ SERIAL_BUFFER_SIZE = 10000												# buffer size to store the incoming data f
 SEPARATOR = "----------------------------------------------------------"
 
 
-# ~ SERIAL_SPEEDS = [
-# ~ 300,
-# ~ 1200,
-# ~ 2400,
-# ~ 4800,
-# ~ 9600,
-# ~ 19200,
-# ~ 38400,
-# ~ 57600,
-# ~ 74880,
-# ~ 115200,
-# ~ 230400,
-# ~ 250000,
-# ~ 500000,
-# ~ 1000000,
-# ~ 2000000
-
-# ~ ]
-
 SERIAL_SPEEDS = [
 	"300",
 	"1200",
@@ -146,7 +127,7 @@ class MainWindow(QMainWindow):
 	n_logs = 0 
 	log_full_path = None												# this variable will be the one used to record 
 	timeouts = 0
-	read_buffer = ""													# all chars read from serial come here, should it go somewhere else?
+	read_buffer = []													# all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording. 
 	first_toggles = 0												# used to check the toggles which contain data on start graphing. 		
 	
@@ -723,8 +704,6 @@ class MainWindow(QMainWindow):
 			self.on_port_error(e)
 			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
 		else:															# if except doens't happen
-			#self.add_arduino_data(byte_buffer)
-
 			try:
 				mid_buffer = byte_buffer.decode('utf-8')
 			except Exception as e:
@@ -768,7 +747,6 @@ class MainWindow(QMainWindow):
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 
 	def add_values_to_dataset(self,values):
-		print("Dataset")
 		# print("values =")
 		# print(values)
 		self.dataset.append(values)  # appends all channels together
@@ -788,20 +766,72 @@ class MainWindow(QMainWindow):
 		self.first_toggles = self.first_toggles + 1				# ???
 
 	def add_emg_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
-		num = True
-		vals = []
-		while(num != 0):
-			byte = self.serial_port.read()
-			num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
-			num = float(num)
-			vals.append(num)
-		vals = vals[:-1]										# remove the final zero
-		if(len(vals) > 1):										# bad trick to remove zero data value array !!!
-			self.add_values_to_dataset(vals)
-			self.plot_frame.update()
-			#return(vals)
 
+		byte_buffer = []
+		num_buffer = []
 
+		try:
+			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
+		except Exception as e:
+			self.on_port_error(e)
+			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
+		else:															# if except doens't happen
+			# print("byte_buffer:")
+			# print(byte_buffer)
+
+			try:
+				for byte in byte_buffer:
+					num = int(byte)
+					#num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
+					num_buffer.append(num)
+					# print("num_buffer:")
+					# print(num_buffer)
+				# here we will have a buffer with lots of numbers (32,45,33,0,45,54,33,0,32...)
+			except Exception as e:
+				print("ERROR: -------------------------")
+				print(e)
+				print(SEPARATOR)
+				self.on_port_error(e)
+			else:
+				self.read_buffer = self.read_buffer + num_buffer			# read buffer contains what was left from previous iteration
+				data_points = self.split_number_array(self.read_buffer,0)	# we split the buffer on 'number 0' received (end of data_points)
+				self.read_buffer = data_points[-1]  						# clean the buffer, saving the non completed data_points
+				a = data_points[:-1]										# get all the completed ones
+				for data_point in a:  										# so all data points except last.
+					if len(data_point) > 1:									# array with one data point per each graph. FIX THIS SHIT!!!
+						self.add_values_to_dataset(data_point)
+				pass
+		self.plot_frame.update()
+		# num = True
+		# vals = []
+		# while(num != 0):
+		# 	byte = self.serial_port.read()
+		# 	num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
+		# 	num = float(num)
+		# 	vals.append(num)
+		# vals = vals[:-1]										# remove the final zero
+		# if(len(vals) > 1):										# bad trick to remove zero data value array !!!
+		# 	self.add_values_to_dataset(vals)
+		# 	self.plot_frame.update()
+		# 	#return(vals)
+
+	def split_number_array(self, array, separator):
+		results = []
+		res = []
+		for val in array:
+			# print(res)
+			# print(val)
+			if val is not separator:
+				res.append(val)
+			else:
+				results.append(res)
+				res = []
+		results.append(res)  # what's left on the res after the separator
+
+		return(results)
+
+	def emg_parse(self):
+		pass
 
 		#num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
 
@@ -819,7 +849,7 @@ class MainWindow(QMainWindow):
 		desc = str(e)
 		logging.debug(type(e))
 		logging.debug(desc)
-		#error_type = None
+		error_type = None
 		i = desc.find("Port is already open.")
 		if(i != -1):
 			print("PORT ALREADY OPEN BY THIS APPLICATION")
@@ -843,6 +873,8 @@ class MainWindow(QMainWindow):
 		if(i != -1):
 			logging.debug("DEVICE CABLE UNGRACEFULLY DISCONNECTED")	
 			error_type = 5
+
+
 
 		# ~ i = desc.find("'utf-8' codec can't decode byte")			# NOT WORKING !!! (GIVING MORE ISSUES THAN IT SOLVED)
 		# ~ if(i != -1):
