@@ -127,7 +127,8 @@ class MainWindow(QMainWindow):
 	n_logs = 0 
 	log_full_path = None												# this variable will be the one used to record 
 	timeouts = 0
-	read_buffer = []													# all chars read from serial come here, should it go somewhere else?
+	read_buffer = None													# all chars read from serial come here, should it go somewhere else?
+	parsing_style = None												# defines the parsing style, for now Arduino, or EMG
 	recording = False													# flag to start/stop recording. 
 	first_toggles = 0												# used to check the toggles which contain data on start graphing. 		
 	
@@ -183,6 +184,13 @@ class MainWindow(QMainWindow):
 		self.light_theme_option.triggered.connect(self.set_light_theme)
 		self.re_theme_option = self.theme_submenu.addAction("Raquena")
 		self.re_theme_option.triggered.connect(self.set_re_theme)
+		# Parsing #
+		self.parsing_submenu = self.preferences_menu.addMenu("Parsing mode")
+		self.arduino_parsing_option = self.parsing_submenu.addAction("Arduino")
+		self.arduino_parsing_option.triggered.connect(self.set_arduino_parsing)
+		self.emg_parsing_option = self.parsing_submenu.addAction("EMG Sensor")
+		self.emg_parsing_option.triggered.connect(self.set_emg_parsing)
+
 		# shortcuts #
 		self.shortcuts_action = self.preferences_menu.addAction("Shortcuts")
 		self.shortcuts_action.triggered.connect(self.shortcut_preferences)
@@ -689,8 +697,10 @@ class MainWindow(QMainWindow):
 			print("dataset_length after removing some points")
 			print(len(self.dataset))
 	def on_serial_timer(self):
-		#self.add_arduino_data()
-		self.add_emg_sensor_data()
+		if(self.parsing_style == "arduino"):
+			self.add_arduino_data()
+		elif(self.parsing_style == "emg"):
+			self.add_emg_sensor_data()
 
 
 	def add_arduino_data(self):
@@ -959,6 +969,16 @@ class MainWindow(QMainWindow):
 		self.palette = pyqt_custom_palettes.re_palette()
 		self.setPalette(self.palette)
 
+	def set_arduino_parsing(self):
+		self.read_buffer = ""
+		self.parsing_style = "arduino"
+
+		pass
+	def set_emg_parsing(self):
+		self.read_buffer = []
+		self.parsing_style = "emg"
+		pass
+
 	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
 		# here we need to add an entry for each serial port avaiable at the computer
 		# 1. How to get the list of available serial ports ?
@@ -1045,6 +1065,7 @@ class MainWindow(QMainWindow):
 				self.plot_frame.check_toggles("all")					# this can't be done 
 			elif event.text() == '0':									# toggles plots all/none
 				self.plot_frame.check_toggles("none")
+
 
 										
 if __name__ == '__main__':
