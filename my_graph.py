@@ -34,7 +34,7 @@ MAX_PLOTS = 12															# Absolute maximum number of plots, change if neede
 class MyPlot(QWidget):
 					
 	n_plots = 12														# number of plots on the current plot. 
-	plot_tick_ms = 50													# every "plot_tick_ms", the plot updates, no matter if there's new data or not. 
+	plot_tick_ms = 50													# every "plot_tick_ms", the plot updates, no matter if there's new data or not.
 	dataset = []														# complete dataset, this should go to a file.							
 	toggles = []														# references to the toggles which enable/disable plots.													
 	

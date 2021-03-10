@@ -4,10 +4,8 @@ import time 										# delays, and time measurement ?
 import random										# random numbers
 import os											# dealing with directories
 
-
 import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
-
 
 import csv
 import numpy as np 									# required to handle multidimensional arrays/matrices
@@ -18,15 +16,10 @@ logging.basicConfig(level = logging.WARNING)
 
 # custom packages #
 
-import qtwidgets
-
 import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
-from my_graph import MyGraph						# custom graph based om pyqtgraph, as a module with its own tests.
 from my_graph import MyPlot
 import my_graph										# for the global variables of the namespace.
 from shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
-from labelled_animated_toggle import LabelledAnimatedToggle
-
 
 # qt imports #
 from PyQt5.QtWidgets import (
@@ -120,16 +113,16 @@ class MainWindow(QMainWindow):
 	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
 	full_screen_flag = False
-	dataset = []  
+	dataset = []														# dataset containing the data to be plotter/recorded.
 	log_folder = "logs"													# in the beginning, log folder, path and filename are fixed
 	log_file_name = "log_file"											# at some point, path needs to be selected by user.
 	log_file_type = ".csv"												# file extension
 	n_logs = 0 
 	log_full_path = None												# this variable will be the one used to record 
 	timeouts = 0
-	read_buffer = None													# all chars read from serial come here, should it go somewhere else?
-	parsing_style = None												# defines the parsing style, for now Arduino, or EMG
-	recording = False													# flag to start/stop recording. 
+	parsing_style = "arduino"											# defines the parsing style, for now Arduino, or EMG
+	read_buffer = ""													# if change to default parsing emg style: read_buffer = [], all chars read from serial come here, should it go somewhere else?
+	recording = False													# flag to start/stop recording.
 	first_toggles = 0												# used to check the toggles which contain data on start graphing. 		
 	
 	# constructor # 

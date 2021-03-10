@@ -1,5 +1,5 @@
 '''
-    <one line to give the program's name and a brief idea of what it does.>
+    <Luisabel Serial plotter, a serial plotter with advanced features.>
     Copyright (C) 2020  Raul Quesada Navarro
 
     This program is free software: you can redistribute it and/or modify
@@ -17,11 +17,6 @@
 '''
 
 import sys
-
-from PyQt5.QtWidgets import (
-	QApplication,
-	)
-
 from main_window import *
 
 ## MAIN ##
