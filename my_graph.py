@@ -29,7 +29,10 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",]
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
-
+DEFAULT_Y_MAX = 1000
+DEFAULT_Y_MIN = 0
+DEFAULT_MAX_POINTS = 200
+CHANNEL_LABEL_MAX_LEN = 10
 		
 class MyPlot(QWidget):
 					
@@ -38,7 +41,7 @@ class MyPlot(QWidget):
 	dataset = []														# complete dataset, this should go to a file.							
 	toggles = []														# references to the toggles which enable/disable plots.													
 	
-	def __init__(self, dataset = [], max_points = 200):
+	def __init__(self, dataset = [], max_points = DEFAULT_MAX_POINTS):
 		super().__init__()	
 		
 		# central widget #
@@ -108,7 +111,8 @@ class MyPlot(QWidget):
 	def set_channels_labels(self,names):								# each channel toggle has a label, set the text on that label.
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
 			try:
-				self.toggles[i].setLabel(names[i])
+				name = names[i][:CHANNEL_LABEL_MAX_LEN]
+				self.toggles[i].setLabel(name)
 			except Exception as e:
 				logging.debug("more channels than labels")
 				
@@ -207,14 +211,14 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		#self.plot_subset = self.dataset[:self.n_plots][-(self.max_points):]	 # get only the portion of the dataset which needs to be printed. 	
 			
 		super().__init__()		
-		pg.setConfigOptions(antialias=False)							# antialiasing for nicer view. 
-		self.setBackground([70,70,70])									# changing default background color.
+		pg.setConfigOptions(antialias=False)																			# antialiasing for nicer view.
+		self.setBackground([70,70,70])																					# changing default background color.
 		self.showGrid(x = True, y = True, alpha = 0.5)
-		self.setRange(xRange = [0,self.max_points], yRange = [-10,100]) 	# set default axes range
-		self.setLimits(xMin=0, xMax=self.max_points, yMin=-1000, yMax=1000)	# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
-		#self.enableAutoRange(axis='x', enable=True)						# enabling autorange for x axis
+		self.setRange(xRange = [0,self.max_points], yRange = [-10,100]) 												# set default axes range
+		self.setLimits(xMin=0, xMax=self.max_points, yMin=DEFAULT_Y_MIN, yMax=DEFAULT_Y_MAX)							# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
+		#self.enableAutoRange(axis='x', enable=True)																	# enabling autorange for x axis
 		legend = self.addLegend()
-		self.setTitle(title)											# if title is wanted	
+		self.setTitle(title)																							# if title is wanted
 		
 	def create_plots(self):
 		for i in range (MAX_PLOTS):

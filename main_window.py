@@ -95,7 +95,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 1000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -708,7 +708,7 @@ class MainWindow(QMainWindow):
 			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
 		else:															# if except doens't happen
 			try:
-				mid_buffer = byte_buffer.decode('utf-8')
+				mid_buffer = byte_buffer.decode('utf-8')				# SHOULDN'T THIS BE PARSING ALREADY???
 			except Exception as e:
 				print(SEPARATOR)
 				# print(e)
@@ -785,7 +785,6 @@ class MainWindow(QMainWindow):
 			try:
 				for byte in byte_buffer:
 					num = int(byte)
-					#num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
 					num_buffer.append(num)
 					# print("num_buffer:")
 					# print(num_buffer)
