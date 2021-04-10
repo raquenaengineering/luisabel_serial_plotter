@@ -95,7 +95,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+POINTS_PER_PLOT = 200													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -499,7 +499,7 @@ class MainWindow(QMainWindow):
 		#logging.debug(self.done)			
 
 	def start_serial(self):
-		# first ensure connection os properly made
+		# first ensure connection is properly made
 		self.serial_connect(self.serial_port_name)
 		# 2. move status to connected 
 		# 3. start the timer to collect the data
@@ -800,8 +800,15 @@ class MainWindow(QMainWindow):
 				self.read_buffer = data_points[-1]  						# clean the buffer, saving the non completed data_points
 				a = data_points[:-1]										# get all the completed ones
 				for data_point in a:  										# so all data points except last.
-					if len(data_point) > 1:									# array with one data point per each graph. FIX THIS SHIT!!!
+					if len(data_point) == 4:								# FIX THIS!: we expect 4 data values per data point, if not, it means corrupted data.
 						self.add_values_to_dataset(data_point)
+
+				# HERE IS WHERE WE GET THE PROBLEMATIC DATA POINTS, SO THE RIGHT PLACE TO FIX IF THERE AREN'T ENOUGH POINTS.
+					else:
+						self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
+
+
+
 				pass
 		self.plot_frame.update()
 		# num = True

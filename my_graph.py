@@ -29,9 +29,9 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",]
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
-DEFAULT_Y_MAX = 1000
+DEFAULT_Y_MAX = 300
 DEFAULT_Y_MIN = 0
-DEFAULT_MAX_POINTS = 200
+DEFAULT_MAX_POINTS = 2000
 CHANNEL_LABEL_MAX_LEN = 10
 		
 class MyPlot(QWidget):

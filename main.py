@@ -25,4 +25,3 @@ app = QApplication(sys.argv)
 app.setStyle("Fusion")													# required to use it here
 mw = MainWindow()
 app.exec_()
-

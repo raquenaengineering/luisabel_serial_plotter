@@ -1,0 +1,47 @@
+
+
+WINDOWS:
+	- TOOLS:
+		- pyinstaller.
+		- inno setup.
+		
+	- PROCESS:
+		- PYINSTALLER:
+		- Use pyinstaller at the folder where the source is.
+		- this will create build and dist folder.
+		- on dist/appname folder, there will be an .exe file.
+		- test if the functionality is right.
+		------------------------------------------
+		- INNO SETUP:
+		- Create script using wizard. 
+		- Set application name/version and rest of the data.
+		- Allow user to change application folder is checked. 
+		- Application files:
+			- main executable file: Browse: /path/to/exe_file generated with pyInstaller.
+			- Other application files: Add folder: /path/to/dist/project_name --> get the whole directory, this is what works best.
+		- associate file not checked (we don't have a file format)
+		- Create shortcut checked, allow user for desktop shortcut checked. 
+		- Application documentation: all 3 unchecked. 
+		- Install mode: administrative install. 
+		- Language english. 
+		- Compiler settings: Add icon file (RE_logo.ico)
+		- yes, use #define.
+		- finish.
+		- Compile new script now. 
+		- Save in safe place, use name of the project --> keep as a part of the repo?
+		- Run (F9) in inno setup Compiler.
+	
+		- install and test. 
+		
+		
+	- NOTES/ISSUES:
+		PYINSTALLED:
+		- Only python files get compiled !!!
+		- no external resources get added to the dist folder!!!
+		- no images
+		- no text files with configuration. 
+		------------------------------------------
+		INNO SETUP:
+		- IF INSTALLING IN PROGRAM FILES, THE SOFTWARE WILL NOT HAVE WRITE PERMISSION SO:
+			- LOGS WON'T BE ABLE TO BE SAVED.
+			- CHANGES IN CONFIGURATION WON'T WORK. 
