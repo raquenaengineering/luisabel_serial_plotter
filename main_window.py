@@ -95,7 +95,7 @@ ENDLINE_OPTIONS = [
 ]
 
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
-POINTS_PER_PLOT = 200													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -805,7 +805,8 @@ class MainWindow(QMainWindow):
 
 				# HERE IS WHERE WE GET THE PROBLEMATIC DATA POINTS, SO THE RIGHT PLACE TO FIX IF THERE AREN'T ENOUGH POINTS.
 					else:
-						self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
+						for i in range(int(len(data_point)/4)+1):
+							self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
 
 
 
