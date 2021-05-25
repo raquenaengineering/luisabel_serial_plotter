@@ -724,6 +724,7 @@ class MainWindow(QMainWindow):
 	def arduino_parse(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
 
 		vals = readed.replace(' ',',')									# replace empty spaces for commas.
+		vals = vals.replace(':',',')				# fast fix for inline labels incompatibility. MAKE IT BETTER !!!
 		vals = vals.split(',')											# arduino serial plotter splits with both characters.
 
 		valsf = []
@@ -735,16 +736,27 @@ class MainWindow(QMainWindow):
 			print("Timeout")
 			print("Total number of timeouts: "+ str(self.timeouts))
 		else:
-			try:
-				for val in vals:
+			for val in vals:
+				try:
 					valsf.append(float(val))
-			except:
-				logging.debug("It contains also text");
-				# add to a captions vector
-				text_vals = vals
-				self.plot_frame.set_channels_labels(text_vals)
-			else:
-				self.add_values_to_dataset(valsf)
+				except:
+					logging.debug("It contains also text");
+					# add to a captions vector
+					text_vals = vals
+					self.plot_frame.set_channels_labels(text_vals)		# this sets all labels, I need to set them independently !!!
+				else:
+					self.add_values_to_dataset(valsf)
+
+			# try:
+			# 	for val in vals:
+			# 		valsf.append(float(val))
+			# except:
+			# 	logging.debug("It contains also text");
+			# 	# add to a captions vector
+			# 	text_vals = vals
+			# 	self.plot_frame.set_channels_labels(text_vals)
+			# else:
+			# 	self.add_values_to_dataset(valsf)
 
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
