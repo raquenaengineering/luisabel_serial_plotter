@@ -183,6 +183,8 @@ class MainWindow(QMainWindow):
 		self.arduino_parsing_option.triggered.connect(self.set_arduino_parsing)
 		self.emg_parsing_option = self.parsing_submenu.addAction("EMG Sensor")
 		self.emg_parsing_option.triggered.connect(self.set_emg_parsing)
+		self.emg_parsing_new_option = self.parsing_submenu.addAction("EMG Sensor NEW")
+		self.emg_parsing_new_option.triggered.connect(self.set_emg_parsing_new)
 
 		# shortcuts #
 		self.shortcuts_action = self.preferences_menu.addAction("Shortcuts")
@@ -314,6 +316,11 @@ class MainWindow(QMainWindow):
 	def closeEvent(self, event):
 
 		print("CLOSING AND CLEANING UP:")
+		try:
+			print("Closing serial port")
+			self.serial_port.close()										# need to explicitly close the serial port to release it
+		except:
+			print("Couldn't close serial port, probably already closed / never open")
 		super().close()
 		#event.ignore()													# extremely useful to ignore the close event !
 	
@@ -444,6 +451,7 @@ class MainWindow(QMainWindow):
 		self.plot_frame.dataset = self.dataset
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
 		self.start_serial()
+		self.setup_slave()												# depending on the choosen mode, there are some requirements to start getting data.
 		self.on_button_play()
 		
 		self.first_toggles = 0
@@ -694,6 +702,22 @@ class MainWindow(QMainWindow):
 			self.add_arduino_data()
 		elif(self.parsing_style == "emg"):
 			self.add_emg_sensor_data()
+		elif(self.parsing_style == "emg_new"):
+			self.add_emg_new_sensor_data()
+
+
+	def setup_slave(self):						# READ/WRITE CONFIG this method performs all the tasks required to write and request data to/from slave
+		print("setting up slave device")
+		# depending on the parsing style, we identify different remote devices and data formats #
+		if(self.parsing_style == "arduino"):	# just writes the ASCII formated data, usually associted with the TEENSY device, or for any other GENERIC device (compatible with Arduino plotter)
+			pass								# no configuration to be done here (at least for now)
+		elif(self.parsing_style == "emg"):
+			self.send_serial("N?")				# this command requests number of sensors in the remote device
+		elif(self.parsing_style == "emg_new"):
+			self.send_serial("N?")
+
+
+		# read variable nSensors
 
 
 	def add_arduino_data(self):
@@ -736,27 +760,27 @@ class MainWindow(QMainWindow):
 			print("Timeout")
 			print("Total number of timeouts: "+ str(self.timeouts))
 		else:
-			for val in vals:
-				try:
-					valsf.append(float(val))
-				except:
-					logging.debug("It contains also text");
-					# add to a captions vector
-					text_vals = vals
-					self.plot_frame.set_channels_labels(text_vals)		# this sets all labels, I need to set them independently !!!
-				else:
-					self.add_values_to_dataset(valsf)
-
-			# try:
-			# 	for val in vals:
+			# for val in vals:
+			# 	try:
 			# 		valsf.append(float(val))
-			# except:
-			# 	logging.debug("It contains also text");
-			# 	# add to a captions vector
-			# 	text_vals = vals
-			# 	self.plot_frame.set_channels_labels(text_vals)
-			# else:
-			# 	self.add_values_to_dataset(valsf)
+			# 	except:
+			# 		logging.debug("It contains also text");
+			# 		# add to a captions vector
+			# 		text_vals = vals
+			# 		self.plot_frame.set_channels_labels(text_vals)		# this sets all labels, I need to set them independently !!!
+			# 	else:
+			# 		self.add_values_to_dataset(valsf)
+
+			try:
+				for val in vals:
+					valsf.append(float(val))
+			except:
+				logging.debug("It contains also text");
+				# add to a captions vector
+				text_vals = vals
+				self.plot_frame.set_channels_labels(text_vals)
+			else:
+				self.add_values_to_dataset(valsf)
 
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
@@ -822,6 +846,65 @@ class MainWindow(QMainWindow):
 
 
 
+
+				pass
+		self.plot_frame.update()
+		# num = True
+		# vals = []
+		# while(num != 0):
+		# 	byte = self.serial_port.read()
+		# 	num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
+		# 	num = float(num)
+		# 	vals.append(num)
+		# vals = vals[:-1]										# remove the final zero
+		# if(len(vals) > 1):										# bad trick to remove zero data value array !!!
+		# 	self.add_values_to_dataset(vals)
+		# 	self.plot_frame.update()
+		# 	#return(vals)
+
+	def add_emg_new_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
+		print("add_emg_new_sensor_data")
+		byte_buffer = []
+		num_buffer = []
+
+		try:
+			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
+		except Exception as e:
+			self.on_port_error(e)
+			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
+		else:															# if except doens't happen
+			print("byte_buffer:")
+			print(byte_buffer)
+
+			try:
+				for byte in byte_buffer:
+					num = int(byte)
+					num_buffer.append(num)
+				print("num_buffer:")
+				print(num_buffer)
+				# here we will have a buffer with lots of numbers (32,45,33,0,45,54,33,0,32...)
+			except Exception as e:
+				print("ERROR: -------------------------")
+				print(e)
+				print(SEPARATOR)
+				self.on_port_error(e)
+			else:
+				self.read_buffer = self.read_buffer + num_buffer				# read buffer contains what was left from previous iteration
+				data_points = self.split_number_array(self.read_buffer,0xFF)	# we split the buffer on 'number FF' received (end of data_points)
+				self.read_buffer = data_points[-1]  							# clean the buffer, saving the non completed data_points
+				a = data_points[:-1]											# get all the completed ones
+				for data_point in a:  											# so all data points except last.
+					if len(data_point) == 4:									# FIX THIS!: we expect 4 data values per data point, if not, it means corrupted data.
+						self.add_values_to_dataset(data_point)
+						pass
+				# HERE IS WHERE WE GET THE PROBLEMATIC DATA POINTS, SO THE RIGHT PLACE TO FIX IF THERE AREN'T ENOUGH POINTS.
+					else:
+						for i in range(int(len(data_point)/4)+1):
+							self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
+
+
+
+
 				pass
 		self.plot_frame.update()
 		# num = True
@@ -860,7 +943,6 @@ class MainWindow(QMainWindow):
 	def init_dataset(self):
 		self.dataset = []
 
-	
 	def clear_dataset(self):	
 		# initializing empty dataset #
 		self.dataset = []
@@ -985,11 +1067,13 @@ class MainWindow(QMainWindow):
 		self.read_buffer = ""
 		self.parsing_style = "arduino"
 
-		pass
 	def set_emg_parsing(self):
 		self.read_buffer = []
 		self.parsing_style = "emg"
-		pass
+
+	def set_emg_parsing_new(self):
+		self.read_buffer = []
+		self.parsing_style = "emg_new"
 
 	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
 		# here we need to add an entry for each serial port avaiable at the computer
