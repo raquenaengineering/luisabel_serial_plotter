@@ -350,10 +350,11 @@ class MainWindow(QMainWindow):
 		self.log_full_path = fullpath;
 	
 		
-	def send_serial(self):												# do I need another thread for this ???
+	def send_serial(self, command = None):										# if no command, we get text from textbox, if command, we send what we got internally
 		logging.debug("Send Serial")
-		command = self.textbox_send_command.text()						# get what's on the textbox. 
-		self.textbox_send_command.setText("")		
+		if(command == None):
+			command = self.textbox_send_command.text()								# get what's on the textbox.
+			self.textbox_send_command.setText("")
 		# here the serial send command # 
 		self.serial_message_to_send = command.encode('utf-8')					# this should have effect on the serial_thread
 
@@ -712,9 +713,15 @@ class MainWindow(QMainWindow):
 		if(self.parsing_style == "arduino"):	# just writes the ASCII formated data, usually associted with the TEENSY device, or for any other GENERIC device (compatible with Arduino plotter)
 			pass								# no configuration to be done here (at least for now)
 		elif(self.parsing_style == "emg"):
-			self.send_serial("N?")				# this command requests number of sensors in the remote device
+			# #self.send_serial("N?")				# this command requests number of sensors in the remote device
+			# self.send_serial("E=1;")			# ENABLES EMG data
+			# self.send_serial("START;")			# STARTS COLLECTING EMG data
+			pass
 		elif(self.parsing_style == "emg_new"):
-			self.send_serial("N?")
+			print("configuring the emg_new device")
+			self.send_serial("E=1;")  # ENABLES EMG data
+			self.send_serial("START;")  # STARTS COLLECTING EMG data
+			pass
 
 
 		# read variable nSensors
@@ -902,23 +909,7 @@ class MainWindow(QMainWindow):
 						for i in range(int(len(data_point)/4)+1):
 							self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
 
-
-
-
-				pass
 		self.plot_frame.update()
-		# num = True
-		# vals = []
-		# while(num != 0):
-		# 	byte = self.serial_port.read()
-		# 	num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
-		# 	num = float(num)
-		# 	vals.append(num)
-		# vals = vals[:-1]										# remove the final zero
-		# if(len(vals) > 1):										# bad trick to remove zero data value array !!!
-		# 	self.add_values_to_dataset(vals)
-		# 	self.plot_frame.update()
-		# 	#return(vals)
 
 	def split_number_array(self, array, separator):
 		results = []
