@@ -654,7 +654,7 @@ class MainWindow(QMainWindow):
 		self.recording = False
 
 	def on_record_timer(self):
-		print("on_record_timer method called:")	
+		#print("on_record_timer method called:")
 		t0 = time.time()
 		
 			# ~ print("self.dataset")
@@ -678,12 +678,12 @@ class MainWindow(QMainWindow):
 		
 		t = time.time()
 		dt = t-t0
-		print(dt)
-		print(SEPARATOR)
-		
-		print("dataset lenght[0] on_record_timer():")
-		print(len(self.dataset))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
-		print("dataset lenght on_timer")
+		# print(dt)
+		# print(SEPARATOR)
+		#
+		# print("dataset lenght[0] on_record_timer():")
+		# print(len(self.dataset))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
+		# print("dataset lenght on_timer")
 		
 			
 		while(len(self.dataset) > 3*POINTS_PER_PLOT):					# this ensures there's always enough data to plot the whole window.
@@ -714,13 +714,23 @@ class MainWindow(QMainWindow):
 			pass								# no configuration to be done here (at least for now)
 		elif(self.parsing_style == "emg"):
 			# #self.send_serial("N?")				# this command requests number of sensors in the remote device
-			# self.send_serial("E=1;")			# ENABLES EMG data
-			# self.send_serial("START;")			# STARTS COLLECTING EMG data
+			# self.send_serial("E=1")			# ENABLES EMG data
+			# self.send_serial("START")			# STARTS COLLECTING EMG data
 			pass
 		elif(self.parsing_style == "emg_new"):
 			print("configuring the emg_new device")
-			self.send_serial("E=1;")  # ENABLES EMG data
-			self.send_serial("START;")  # STARTS COLLECTING EMG data
+			print("reading the number of sensors")
+			self.send_serial("N?")
+			n_sensors = self.serial_port.readline()
+			print(n_sensors)
+			# for i in range(1,100):
+			# 	n_sensors = self.serial_port.read(500)
+			# 	print(n_sensors)
+
+
+			# UNCOMMENT THESE TWO LINES WHEN FINISHED DEBUGGING !!!#
+			self.send_serial("E=1")  # ENABLES EMG data
+			self.send_serial("START")  # STARTS COLLECTING EMG data
 			pass
 
 
@@ -870,7 +880,7 @@ class MainWindow(QMainWindow):
 		# 	#return(vals)
 
 	def add_emg_new_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
-		print("add_emg_new_sensor_data")
+		#print("add_emg_new_sensor_data")
 		byte_buffer = []
 		num_buffer = []
 
@@ -880,15 +890,15 @@ class MainWindow(QMainWindow):
 			self.on_port_error(e)
 			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
 		else:															# if except doens't happen
-			print("byte_buffer:")
-			print(byte_buffer)
+			# print("byte_buffer:")
+			# print(byte_buffer)
 
 			try:
 				for byte in byte_buffer:
 					num = int(byte)
 					num_buffer.append(num)
-				print("num_buffer:")
-				print(num_buffer)
+				# print("num_buffer:")
+				# print(num_buffer)
 				# here we will have a buffer with lots of numbers (32,45,33,0,45,54,33,0,32...)
 			except Exception as e:
 				print("ERROR: -------------------------")
@@ -1103,7 +1113,7 @@ class MainWindow(QMainWindow):
 		#0. should be done on init(): Load the shortcuts from a file where they're stored ¿in json format?
 		#1. get the current shortcuts (stored somewhere in a variable, which also needs to be created(USE DICTIONARY))
 		#2. create a widget containing a table with all the shortcuts and their shortcut value. 
-		# 
+		#
 
 	def full_screen(self):												# it should be able to be detected from window class !!!
 		if self.full_screen_flag == False:								
