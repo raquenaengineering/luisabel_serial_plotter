@@ -43,7 +43,7 @@ ABS_MAX_RANGE = 1000000
 
 
 class RangeDialog(QDialog):
-	def __init__(self, absolute_max_range):
+	def __init__(self, absolute_max_range = None):
 		super().__init__()
 
 		self.min_textbox = QLineEdit(self)

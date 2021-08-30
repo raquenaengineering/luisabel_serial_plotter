@@ -20,6 +20,7 @@ import pyqt_custom_palettes							# move at some point to a repo, and add it as 
 from my_graph import MyPlot
 import my_graph										# for the global variables of the namespace.
 from shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
+from range_dialog import RangeDialog
 
 # qt imports #
 from PyQt5.QtWidgets import (
@@ -123,7 +124,7 @@ class MainWindow(QMainWindow):
 	parsing_style = "arduino"											# defines the parsing style, for now Arduino, or EMG
 	read_buffer = ""													# if change to default parsing emg style: read_buffer = [], all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording.
-	first_toggles = 0												# used to check the toggles which contain data on start graphing. 		
+	first_toggles = 0													# used to check the toggles which contain data on start graphing.
 	
 	# constructor # 
 	def __init__(self):
@@ -185,7 +186,9 @@ class MainWindow(QMainWindow):
 		self.emg_parsing_option.triggered.connect(self.set_emg_parsing)
 		self.emg_parsing_new_option = self.parsing_submenu.addAction("EMG Sensor NEW")
 		self.emg_parsing_new_option.triggered.connect(self.set_emg_parsing_new)
-
+		# Set plot range #
+		self.set_range_action = self.preferences_menu.addAction("Set Plot Range")
+		self.set_range_action.triggered.connect(self.set_plot_range)
 		# shortcuts #
 		self.shortcuts_action = self.preferences_menu.addAction("Shortcuts")
 		self.shortcuts_action.triggered.connect(self.shortcut_preferences)
@@ -242,9 +245,11 @@ class MainWindow(QMainWindow):
 		self.layout_player.addWidget(self.button_stop)
 		# autoscale #
 		self.button_autoscale = QPushButton("Scale Fit")
-		#self.button_autoscale.setCheckable(True)
+		self.button_autoscale.setIcon(QIcon('resources/player_icons/195.png'))
 		self.button_autoscale.clicked.connect(self.on_button_autoscale)
 		self.layout_player.addWidget(self.button_autoscale)
+		#self.button_autoscale.setCheckable(True)
+
 		# ~ self.autoscale_toggle = LabelledAnimatedToggle(color = "#ffffff",label_text = "Autoscale")
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
 				
@@ -1075,6 +1080,18 @@ class MainWindow(QMainWindow):
 	def set_emg_parsing_new(self):
 		self.read_buffer = []
 		self.parsing_style = "emg_new"
+
+	def set_plot_range(self):
+		print("set_range_action method called")
+		plot_range_dialog = RangeDialog()
+
+		if plot_range_dialog.exec_():
+			print(plot_range_dialog.getInputs())
+			self.plot_frame.graph.setLimits(yMin=int(plot_range_dialog.getInputs()[0]),
+											yMax=int(plot_range_dialog.getInputs()[1]))
+
+
+
 
 	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
 		# here we need to add an entry for each serial port avaiable at the computer
