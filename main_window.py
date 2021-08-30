@@ -19,7 +19,7 @@ logging.basicConfig(level = logging.WARNING)
 import pyqt_custom_palettes							# move at some point to a repo, and add it as a submodule dark_palette, and more.
 from my_graph import MyPlot
 import my_graph										# for the global variables of the namespace.
-from shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
+from re_pyqt_widgets.shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
 from range_dialog import RangeDialog
 
 # qt imports #
