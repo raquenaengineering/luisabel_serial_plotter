@@ -12,6 +12,8 @@ import numpy as np 									# required to handle multidimensional arrays/matrice
 
 import logging
 #logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+from future.utils import text_type
+
 logging.basicConfig(level = logging.WARNING)
 
 # custom packages #
@@ -44,7 +46,8 @@ from PyQt5.QtWidgets import (
 	QTextEdit,
 	QMenu,
 	QAction,
-	QWidget
+	QWidget,
+	QInputDialog,
 )
 
 from PyQt5.QtGui import (
@@ -125,7 +128,8 @@ class MainWindow(QMainWindow):
 	read_buffer = ""													# if change to default parsing emg style: read_buffer = [], all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording.
 	first_toggles = 0													# used to check the toggles which contain data on start graphing.
-	
+	n_data_points = POINTS_PER_PLOT										# defaults to the POINTS_PER_PLOT value
+
 	# constructor # 
 	def __init__(self):
 				
@@ -187,8 +191,11 @@ class MainWindow(QMainWindow):
 		self.emg_parsing_new_option = self.parsing_submenu.addAction("EMG Sensor NEW")
 		self.emg_parsing_new_option.triggered.connect(self.set_emg_parsing_new)
 		# Set plot range #
-		self.set_range_action = self.preferences_menu.addAction("Set Plot Range")
+		self.set_range_action = self.preferences_menu.addAction("Set Plot Y Range")
 		self.set_range_action.triggered.connect(self.set_plot_range)
+		# Set maximum plot points #
+		self.set_n_plot_points_action = self.preferences_menu.addAction("Set max. plot points (X Rangef)")
+		self.set_n_plot_points_action.triggered.connect(self.set_n_plot_points)
 		# shortcuts #
 		self.shortcuts_action = self.preferences_menu.addAction("Shortcuts")
 		self.shortcuts_action.triggered.connect(self.shortcut_preferences)
@@ -212,8 +219,8 @@ class MainWindow(QMainWindow):
 		self.layout_plot = QHBoxLayout()								# plot plus buttons to enable/disable graphs
 		self.layoutV1.addLayout(self.layout_plot)
 		self.plot_frame = MyPlot(dataset = self.dataset, 
-									max_points = POINTS_PER_PLOT)		# we'll use a custom class, so we can modify the defaults via class definition
-		self.plot_frame.max_points = POINTS_PER_PLOT					# width of the plot in points, doesn't work !!!
+									max_points = self.n_data_points)		# we'll use a custom class, so we can modify the defaults via class definition
+		self.plot_frame.max_points = self.n_data_points					# width of the plot in points, doesn't work !!!
 		self.plot_frame.enable_toggles("none")
 		self.plot_frame.check_toggles("none")
 		self.layout_plot.addWidget(self.plot_frame)
@@ -650,7 +657,6 @@ class MainWindow(QMainWindow):
 			x_axis[i] = x_axis[i]*2
 		self.plot_frame.graph.setRange(xRange = x_axis)	
 
-
 	def start_recording(self):
 		self.set_logfile()
 		self.recording = True
@@ -678,7 +684,7 @@ class MainWindow(QMainWindow):
 			# ~ print(SEPARATOR)
 			with open(self.log_full_path, mode = 'a', newline = '') as csv_file:	# "log_file.csv" if will probably smash the data after first write!!!
 				dataset_writer = csv.writer(csv_file, delimiter = ',')				# standard way to write to csv file
-				for value in self.dataset[0:POINTS_PER_PLOT]:						# only record the first "POINT_PER_PLOT" data points.
+				for value in self.dataset[0:self.n_data_points]:						# only record the first "POINT_PER_PLOT" data points.
 					dataset_writer.writerow(value)
 		
 		t = time.time()
@@ -691,18 +697,19 @@ class MainWindow(QMainWindow):
 		# print("dataset lenght on_timer")
 		
 			
-		while(len(self.dataset) > 3*POINTS_PER_PLOT):					# this ensures there's always enough data to plot the whole window.
-			print("Dataset removing some points")
-			# ~ for i in range(POINTS_PER_PLOT-1):
+		while(len(self.dataset) > 3*self.n_data_points):					# this ensures there's always enough data to plot the whole window.
+			logging.debug("Dataset removing some points")
+			# ~ for i in range(self.n_data_points-1):
 				# ~ self.dataset.pop()
-			print(len(self.dataset))
-			self.dataset = self.dataset[POINTS_PER_PLOT:]				# removes the first "POINTS_PER_PLOT" values from the dataset.
-			print(len(self.dataset))
+			logging.debug(len(self.dataset))
+			self.dataset = self.dataset[self.n_data_points:]				# removes the first "self.n_data_points" values from the dataset.
+			logging.debug(len(self.dataset))
 			self.plot_frame.dataset = self.dataset
 			#self.clear_dataset()	# doesn't make any difference
 			self.plot_frame.dataset_changed = True						# if we remove a part of the dataset, it is indeed changing. 
-			print("dataset_length after removing some points")
-			print(len(self.dataset))
+			logging.debug("dataset_length after removing some points")
+			logging.debug(len(self.dataset))
+
 	def on_serial_timer(self):
 		if(self.parsing_style == "arduino"):
 			self.add_arduino_data()
@@ -710,7 +717,6 @@ class MainWindow(QMainWindow):
 			self.add_emg_sensor_data()
 		elif(self.parsing_style == "emg_new"):
 			self.add_emg_new_sensor_data()
-
 
 	def setup_slave(self):						# READ/WRITE CONFIG this method performs all the tasks required to write and request data to/from slave
 		print("setting up slave device")
@@ -738,9 +744,7 @@ class MainWindow(QMainWindow):
 			self.send_serial("START")  # STARTS COLLECTING EMG data
 			pass
 
-
 		# read variable nSensors
-
 
 	def add_arduino_data(self):
 
@@ -883,7 +887,6 @@ class MainWindow(QMainWindow):
 		# 	self.add_values_to_dataset(vals)
 		# 	self.plot_frame.update()
 		# 	#return(vals)
-
 	def add_emg_new_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
 		#print("add_emg_new_sensor_data")
 		byte_buffer = []
@@ -953,7 +956,6 @@ class MainWindow(QMainWindow):
 		# initializing empty dataset #
 		self.dataset = []
 
-						
 	def on_port_error(self,e):											# triggered by the serial thread, shows a window saying port is used by sb else.
 
 		desc = str(e)
@@ -1082,7 +1084,7 @@ class MainWindow(QMainWindow):
 		self.parsing_style = "emg_new"
 
 	def set_plot_range(self):
-		print("set_range_action method called")
+		logging.debug("set_range_action method called")
 		plot_range_dialog = RangeDialog()
 
 		if plot_range_dialog.exec_():
@@ -1090,8 +1092,12 @@ class MainWindow(QMainWindow):
 			self.plot_frame.graph.setLimits(yMin=int(plot_range_dialog.getInputs()[0]),
 											yMax=int(plot_range_dialog.getInputs()[1]))
 
-
-
+	def set_n_plot_points(self):
+		print("set_n_plot_points method called")
+		i, okPressed = QInputDialog.getText(self, "Set n points", "Number of plot points (recommended max. 5000):")
+		if okPressed:
+			self.n_data_points = int(i)
+			self.plot_frame.set_max_points(self.n_data_points)
 
 	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
 		# here we need to add an entry for each serial port avaiable at the computer

@@ -123,7 +123,12 @@ class MyPlot(QWidget):
 				self.toggles[i].setLabel('')
 			except Exception as e:
 				logging.debug("more channels than labels")
-					
+
+	def set_max_points(self, max_points):
+		self.graph.max_points = max_points
+		self.graph.setXRange(0,max_points)
+		self.graph.setLimits(xMin=0, xMax=self.graph.max_points)
+
 
 	def create_plots(self):
 		self.graph.create_plots()
