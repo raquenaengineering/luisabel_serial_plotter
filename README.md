@@ -19,6 +19,11 @@ pip install pyqtgraph
 + Qt Widgets:
 pip install qtwidgets
 
++ To simplify (in the project folder):
+pip install -r requirements.txt
+
++ submodules:
+git submodule update --init --recursive
 
 
 ## Many thanks to:
