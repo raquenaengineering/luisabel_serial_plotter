@@ -1,0 +1,6 @@
+[submodule "re_pyqt_widgets"]
+	path = re_pyqt_widgets
+	url = https://github.com/raquenaengineering/re_pyqt_widgets
+[submodule "pyqt_common_resources"]
+	path = pyqt_common_resources
+	url = https://github.com/raquenaengineering/pyqt_common_resources.git
