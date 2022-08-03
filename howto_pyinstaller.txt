@@ -1,0 +1,12 @@
+
+
+SINGLE EXECUTABLE WITH LOGO: 
+------------------------------------------------------------------------
+
+1. Move to the folder containing the pyinstaller version for this project, in this case:
+ cd ~/Desktop/PROYECTOS/luisabel_serial_plotter/venv/Scripts
+
+2. Run Pyinstaller with the following commands:
+pyinstaller.exe --onefile --ico="../../resources/re_logo.ico" --noconsole ../../main.py
+
+

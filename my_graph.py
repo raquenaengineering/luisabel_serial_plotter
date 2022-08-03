@@ -126,8 +126,9 @@ class MyPlot(QWidget):
 
 	def set_max_points(self, max_points):
 		self.graph.max_points = max_points
-		self.graph.setXRange(0,max_points)
 		self.graph.setLimits(xMin=0, xMax=self.graph.max_points)
+		self.graph.setXRange(0,self.graph.max_points)
+
 
 
 	def create_plots(self):

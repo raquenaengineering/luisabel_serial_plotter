@@ -64,14 +64,6 @@ class RangeDialog(QDialog):
 	def getInputs(self):
 		return (self.min_textbox.text(), self.max_textbox.text())
 
-# if __name__ == '__main__':
-#
-#     import sys
-#     app = QApplication(sys.argv)
-#     dialog = RangeDialog()
-#     if dialog.exec():
-#         print(dialog.getInputs())
-#     exit(0)
 
 class RangeDialogOldOld(QDialog):  # this is supposed to be the python convention for classes.
 

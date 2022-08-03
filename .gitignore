@@ -1,7 +1,8 @@
 # added by Raquena Engineering @
 /local_docu
 /logs
-
+/re_pyqt_widgets
+/pyqt_common_resources
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

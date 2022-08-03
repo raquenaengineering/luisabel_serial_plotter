@@ -3,5 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/local_docu/examples/pyqt_examples/Win10-Start-menu-steam-tile-maker" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pyqt_common_resources" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/re_pyqt_widgets" vcs="Git" />
   </component>
 </project>

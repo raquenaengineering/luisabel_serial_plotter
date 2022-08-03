@@ -91,7 +91,9 @@ if __name__ == '__main__':
 	time_span = 1
 	n_vals_tot = 0
 
-	serial_port = serial.Serial("COM17")
+	#serial_port = serial.Serial("COM17")
+	serial_port = serial.Serial("COM4")
+
 
 	i = 0
 	while (i < repetitions):

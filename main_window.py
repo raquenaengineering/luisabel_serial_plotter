@@ -194,7 +194,7 @@ class MainWindow(QMainWindow):
 		self.set_range_action = self.preferences_menu.addAction("Set Plot Y Range")
 		self.set_range_action.triggered.connect(self.set_plot_range)
 		# Set maximum plot points #
-		self.set_n_plot_points_action = self.preferences_menu.addAction("Set max. plot points (X Rangef)")
+		self.set_n_plot_points_action = self.preferences_menu.addAction("Set max. plot points (X Range)")
 		self.set_n_plot_points_action.triggered.connect(self.set_n_plot_points)
 		# shortcuts #
 		self.shortcuts_action = self.preferences_menu.addAction("Shortcuts")
