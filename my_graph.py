@@ -220,7 +220,7 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 		super().__init__()		
 		pg.setConfigOptions(antialias=False)																			# antialiasing for nicer view.
 		self.setBackground([70,70,70])																					# changing default background color.
-		self.showGrid(x = True, y = True, alpha = 0.5)
+		#self.showGrid(x = True, y = True, alpha = 0.5)
 		self.setRange(xRange = [0,self.max_points], yRange = [-10,100]) 												# set default axes range
 		self.setLimits(xMin=0, xMax=self.max_points, yMin=DEFAULT_Y_MIN, yMax=DEFAULT_Y_MAX)							# THIS MAY ENTER IN CONFIG WITH PLOTTING !!!
 		#self.enableAutoRange(axis='x', enable=True)																	# enabling autorange for x axis
