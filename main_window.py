@@ -285,7 +285,7 @@ class MainWindow(QMainWindow):
 		self.combo_serial_speed = QComboBox()
 		self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
 		self.combo_serial_speed.addItems(SERIAL_SPEEDS)
-		self.combo_serial_speed.setCurrentIndex(11)						# this index corresponds to 250000 as default baudrate.
+		self.combo_serial_speed.setCurrentIndex(SERIAL_SPEEDS.index(str(self.serial_baudrate)))						# this index corresponds to 250000 as default baudrate.
 		self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
 			self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?) 
 		self.layoutH1.addWidget(self.combo_serial_speed)				# 
@@ -463,6 +463,7 @@ class MainWindow(QMainWindow):
 		self.record_timer.start()
 		self.plot_frame.dataset = self.dataset
 		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
+		self.plot_frame.enable_toggles("all")
 		self.start_serial()
 		self.setup_slave()												# depending on the choosen mode, there are some requirements to start getting data.
 		self.on_button_play()
@@ -796,17 +797,17 @@ class MainWindow(QMainWindow):
 			# 		self.plot_frame.set_channels_labels(text_vals)		# this sets all labels, I need to set them independently !!!
 			# 	else:
 			# 		self.add_values_to_dataset(valsf)
-
-			try:
-				for val in vals:
+			text_vals = []
+			for val in vals:
+				try:
 					valsf.append(float(val))
-			except:
-				logging.debug("It contains also text");
-				# add to a captions vector
-				text_vals = vals
-				self.plot_frame.set_channels_labels(text_vals)
-			else:
-				self.add_values_to_dataset(valsf)
+				except:
+					# logging.debug("It contains also text")
+					# add to a captions vector
+					text_vals.append(val)
+					self.plot_frame.set_channels_labels(text_vals)
+				else:
+					self.add_values_to_dataset(valsf)
 
 			self.plot_frame.update()
 			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
