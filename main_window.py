@@ -8,7 +8,7 @@ import serial										# required to handle serial communication
 import serial.tools.list_ports						# to list already existing ports
 
 import csv
-import numpy as np 									# required to handle multidimensional arrays/matrices
+import numpy as np 										# required to handle multidimensional arrays/matrices
 
 import logging
 #logging.basicConfig(level=logging.DEBUG)			# enable debug messages

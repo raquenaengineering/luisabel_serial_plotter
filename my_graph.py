@@ -28,6 +28,12 @@ COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",
 			"FFA500","7fff00","00ff7f","007FFF","EE82EE","FF007F",]
 
+COLORS = ["#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff",
+			"#FFA500","#7fff00","#00ff7f","#007FFF","#EE82EE","#FF007F",
+			"#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff",
+			"#FFA500","#7fff00","#00ff7f","#007FFF","#EE82EE","#FF007F",]
+
+
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
 ABS_Y_MAX = 1000000														# Absolute maximum Y range, is fixed, and can only be changed on compilation time.
 DEFAULT_Y_MAX = 100000
@@ -290,8 +296,8 @@ class MyGraph(pg.PlotWidget):											# this is supposed to be the python conv
 				
 				self.dataset_changed = True
 			
-			pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
-		
+			# pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
+			pg.QtWidgets.QApplication.processEvents()
 
 ## THIS PART WON'T BE EXECUTED WHEN IMPORTED AS A SUBMODULE, BUT ONLY WHEN TESTED INDEPENDENTLY ##
 
@@ -354,9 +360,9 @@ if __name__ == "__main__":
 					line.append(random.randrange(0,100))	
 			self.dataset.append(line)
 					
-			print("self.dataset")
-			for data in self.dataset:
-				print(data)
+			# print("self.dataset")
+			# for data in self.dataset:
+			# 	print(data)
 			
 			self.plot.dataset = self.dataset							# this SHOULD HAPPEN INTERNAL TO THE CLASS !!!
 					
