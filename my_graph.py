@@ -1,26 +1,10 @@
 
-import random
-import time 
 import logging
-import math
+import random
+import time
 
 import numpy as np
 
-
-from PyQt5.QtWidgets import(
-	QApplication,
-	QMainWindow,
-	QWidget,
-	QHBoxLayout,																# create a new widget, which contains the MyGraph window
-	QVBoxLayout,
-	QLabel
-)
-
-from PyQt5.QtCore import(
-	QTimer
-)
-import pyqtgraph as pg
-import qtwidgets
 from labelled_animated_toggle import *
 
 COLORS = ["ff0000","00ff00","0000ff","ffff00","ff00ff","00ffff",

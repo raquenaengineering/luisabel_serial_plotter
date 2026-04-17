@@ -1,26 +1,27 @@
 
-from PyQt5.QtWidgets import(
+from PySide6.QtWidgets import (
 	QApplication,
 	QMainWindow,
 	QWidget,
-	QHBoxLayout,																# create a new widget, which contains the MyGraph window
+	QHBoxLayout,  # create a new widget, which contains the MyGraph window
 	QVBoxLayout,
-	QLabel
+	QLabel,
+	QCheckBox
 )
 
-from PyQt5.QtCore import(
+from PySide6.QtCore import(
 	QTimer
 )
 import pyqtgraph as pg
-import qtwidgets
-from labelled_animated_toggle import *
+# import qtwidgets
 
 class LabelledAnimatedToggle(QWidget):
 	
 	def __init__(self,color = "#aaffaa", label_text = ""):				# optional parameters instead ??? yes, thanks.
 		super().__init__()
 		self.label = QLabel(label_text)
-		self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
+		# self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
+		self.toggle = 	QCheckBox()
 		
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)

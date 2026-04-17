@@ -1,6 +1,6 @@
-numpy~=2.4.4
-PyQt5~=5.15.11
-pyqtgraph~=0.14.0
-qtwidgets~=0.18
-pyserial~=3.5
-future~=0.18.2
+numpy
+PySide6
+pyqtgraph
+qtwidgets
+pyserial
+future

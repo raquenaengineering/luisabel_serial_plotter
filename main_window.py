@@ -25,7 +25,7 @@ from re_pyqt_widgets.shortcuts_widget import ShortcutsWidget		# custom widget to
 from range_dialog import RangeDialog
 
 # qt imports #
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
 	QApplication,
 	QMainWindow,
 	QVBoxLayout,
@@ -39,30 +39,31 @@ from PyQt5.QtWidgets import (
 	QStatusBar,
 	QDialog,
 	QMessageBox,														# Dialog with extended functionality. 
-	QShortcut,
-	QCheckBox,	
+	QCheckBox,
 
 	QSystemTrayIcon,
 	QTextEdit,
 	QMenu,
-	QAction,
 	QWidget,
 	QInputDialog,
 )
 
-from PyQt5.QtGui import (
+from PySide6.QtGui import (
 	QIcon,
+	QShortcut,
+	QAction,
+
 	QKeySequence
 )
 
-from PyQt5.QtCore import(
+from PySide6.QtCore import(
 	Qt,
 	QThreadPool,
 	QRunnable,
 	QObject,
 	QSize,
-	pyqtSignal,															# those two are pyqt specific. 
-	pyqtSlot,
+	Signal,															# those two are pyqt specific.
+	Slot,
 	QTimer																# nasty stuff
 
 )

@@ -3,8 +3,8 @@ import signal
 import sys
 import os
 
-from PyQt5.QtCore import QCoreApplication, QTimer
-from PyQt5.QtBluetooth import QBluetoothLocalDevice, QBluetoothDeviceDiscoveryAgent, QBluetoothDeviceInfo
+from PySide6.QtCore import QCoreApplication, QTimer
+from PySide6.QtBluetooth import QBluetoothLocalDevice, QBluetoothDeviceDiscoveryAgent, QBluetoothDeviceInfo
 
 
 class Application(QCoreApplication):
@@ -42,7 +42,7 @@ class Application(QCoreApplication):
 		self.agent = QBluetoothDeviceDiscoveryAgent(self)
 		# self.agent.deviceDiscovered.connect(self.fin)
 		self.agent.finished.connect(self.fin)
-		self.agent.error.connect(self.err)
+		self.agent.errorOccurred.connect(self.err)
 		self.agent.setLowEnergyDiscoveryTimeout(10000)
 		# self.agent.discoveredDevices()
 
