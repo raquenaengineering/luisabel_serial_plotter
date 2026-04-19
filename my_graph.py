@@ -15,10 +15,10 @@ COLORS = ["#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff",
 
 MAX_PLOTS = 12															# Absolute maximum number of plots, change if needed !!
 ABS_Y_MAX = 1000000														# Absolute maximum Y range, is fixed, and can only be changed on compilation time.
-DEFAULT_Y_MAX = 100000
-DEFAULT_Y_MIN = -100000
-DEFAULT_MAX_POINTS = 2000
-CHANNEL_LABEL_MAX_LEN = 10
+DEFAULT_Y_MAX = 100000													# max y by default (reachable when scrolling)
+DEFAULT_Y_MIN = -100000													# min y by default
+DEFAULT_MAX_POINTS = 2000												# number of points to be shown by default
+CHANNEL_LABEL_MAX_LEN = 20												# limits the lenght of the channel label.
 
 
 ## GET BETTER NAMING FOR THIS !!! ##
@@ -48,10 +48,10 @@ class MyGraph(pg.PlotWidget):  # this is supposed to be the python convention fo
 
 	def __init__(self, dataset=None, max_points=500, title=""):
 		"""
-
-		:param dataset:
-		:param max_points:
-		:param title:
+		Initializes the graph of the plot, setting background, range, limits and so on.
+		:param dataset: 		Where the data of the graphs to be plotted will be stored.
+		:param max_points:		Number of points per plotted graph, default 500.
+		:param title:			Title of the plot.
 		"""
 		for i in range(max_points):  # create a time vector --> move to NUMPY !!!
 			self.tvec.append(i)
@@ -94,15 +94,17 @@ class MyGraph(pg.PlotWidget):  # this is supposed to be the python convention fo
 			self.plot_refs[i].clear()  # clears the plot
 			# self.plot_refs[i].setData([0])  # sets the data to 0, may not be necessary
 
-	def set_enabled_graphs(self, enable_list):  # enabled/dsables graphs ON GRAPH WINDOW, not on the toggles.
+	def set_enabled_graphs(self, enable_list):  #
 		"""
-
-		:param enabled_graphs:
+		Enabled/dsables graphs ON GRAPH WINDOW, not on the toggles.
+		The graphs are enabled/disabled according to the enable_list, which updates based in the toggles.
+		:param enable_list:	List with true/false values for each of the graphs. also "all" or "none" instead
+		of a list can be used as enable_list values.
 		:return:
 		"""
 		if enable_list == "all":
 			enable_list = []
-			for i in range(MAX_PLOTS):
+			for i in range(MAX_PLOTS):									# this refers to MAX_PLOTS, shouldn't it refer to n_plots???
 				enable_list.append(True)
 		elif enable_list == "none":
 			enable_list = []
@@ -111,7 +113,14 @@ class MyGraph(pg.PlotWidget):  # this is supposed to be the python convention fo
 				print("enable_list all false")
 		self.enabled_graphs = enable_list
 
-	def on_plot_timer(self):
+	def update_graphs(self):
+		"""
+		This is the method that actually makes the repainting of the graphs
+		In the first iteration, the graphs don't exist, so it creates them and
+		from there takes the subset of data to be plotted (as the whole data stored is bigger than showed) and
+		then assign the data to each channel.
+		:return:
+		"""
 		# print("PLOT_TIMER MyGraph")
 		# print (self.dataset_changed)
 
@@ -124,43 +133,24 @@ class MyGraph(pg.PlotWidget):  # this is supposed to be the python convention fo
 
 		# SECOND: UPDATE THE PLOTS:
 
-		if (self.dataset_changed == True):  # redraw only if there are changes on the dataset
-			# print("dataset has changed")
-			# print("length of subset")
-			# print(len(self.plot_subset))
+		if (self.dataset_changed == True):  						# redraw only if there are changes on the dataset
+
 			self.dataset_changed = False
 
 			self.np_dataset = np.matrix(
-				self.dataset[:][-self.max_points:])  # we only use as subset the last max_points,
-			self.np_dataset_t = self.np_dataset.transpose()  # needed for correct dimensions
-			self.plot_subset = self.np_dataset_t.tolist()  # this is the data to be plotted, with a vector representing each variable
-			# ~ print("len(self.plot_subset[0])")
-			# ~ print(len(self.plot_subset[0]))
-
-			# ~ print("self.dataset")
-			# ~ print(self.dataset)
-			# ~ print("self.np_dataset")
-			# ~ print(self.np_dataset)
-			# ~ print("self.plot_subset")
-			# ~ for var in self.plot_subset:
-			# ~ print(var)
+				self.dataset[:][-self.max_points:])  				# we only use as subset the last max_points,
+			self.np_dataset_t = self.np_dataset.transpose()  		# needed for correct dimensions
+			self.plot_subset = self.np_dataset_t.tolist()  			# this is the data to be plotted, with a vector representing each variable
 
 			# THIS IS ACTUALLY WHAT PLOTS THE DATA #
 			for i in range(len(self.plot_subset)):
-				# ~ print("len(self.plot_refs)")
-				# ~ print(len(self.plot_refs))
-				print("Enabled graphs")
-				print(self.enabled_graphs)
-				if (self.enabled_graphs[i] == True):
+				if (self.enabled_graphs[i] == True):				# if graph is enabled, add the data to it.
 					self.plot_refs[i].setData(
-						self.plot_subset[i])  # required for update: reassign references to the plots
+						self.plot_subset[i])  						# required for update: reassign references to the plots
 				else:
-					self.plot_refs[i].setData([])  # empty plot, if toggle not active.
+					self.plot_refs[i].setData([])  					# if graph disabled (toggle not active) empty plot.
 
-			# self.dataset_changed = True
-
-			# pg.QtGui.QApplication.processEvents()						# for whatever reason, works faster when using processEvent.
-			pg.QtWidgets.QApplication.processEvents()
+			pg.QtWidgets.QApplication.processEvents()				# for whatever reason, works faster when using processEvent.
 
 class MyPlot(QWidget):
 					
@@ -172,7 +162,7 @@ class MyPlot(QWidget):
 	def __init__(self, dataset = [], max_points = DEFAULT_MAX_POINTS):
 		"""
 
-		:param dataset:
+		:param dataset: Datasheet to be plotted at the graph, could be given directly to graph instead.
 		:param max_points: Maximum number of points to be plotted? or stored ???
 		"""
 		super().__init__()
@@ -238,7 +228,14 @@ class MyPlot(QWidget):
 			for i in range (MAX_PLOTS):
 				self.toggles[i].setChecked(vals[i])						# vals should be a list with as many elements as toggles
 		
-	def set_channels_labels(self,names):								# each channel toggle has a label, set the text on that label.
+	def set_channels_labels(self,names):
+		"""
+		Each channel toggle has a label, set the text on that label.
+		:param names:
+		Vector of names for the different channels, 
+		can be maximum MAX_PLOTS size.
+		:return: None
+		"""
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
 			try:
 				name = names[i][:CHANNEL_LABEL_MAX_LEN]
@@ -246,7 +243,11 @@ class MyPlot(QWidget):
 			except Exception as e:
 				logging.debug("more channels than labels")
 				
-	def clear_channels_labels(self):									# clear all labels, usually to set them with new vals.
+	def clear_channels_labels(self):
+		"""
+		# clear all labels, usually to set them with new vals.
+		:return: 
+		"""
 		for i in range(MAX_PLOTS):										# we only assign the names of the plots that can be plotted
 			try:
 				self.toggles[i].setLabel('')
@@ -254,6 +255,12 @@ class MyPlot(QWidget):
 				logging.debug("more channels than labels")
 
 	def set_max_points(self, max_points):
+		"""
+		The number of points to be plotted in the graphs is variable, with this function can be changed.
+		Also adjusts the plot to the number of points.
+		:param max_points: Set maximum number of points to be plotted, NOT RECOMMENDED > 5000 (makes plot heavy)
+		:return:
+		"""
 		self.graph.max_points = max_points
 		self.graph.setLimits(xMin=0, xMax=self.graph.max_points)
 		self.graph.setXRange(0,self.graph.max_points)
@@ -269,24 +276,30 @@ class MyPlot(QWidget):
 
 	def on_plot_timer(self):											# this is an option, to add together toggle processing and replot.
 		"""
-		
+		There are two on_plot_timer functions, one for plot and one for graph
+		do not confuse them.
+		The one in plot, is an extension of the graph one.
+		on_plot_timer performs two basic tasks:
+		1. Update the active graphs based on the toggles (as the toggles belong to plot)
+		2. Update the dataset 
+		3. Execute graph's update_graph function, where the actual plotting of all graphs happens.
 		:return: 
 		"""
-		enabled = []
-		for i in range(0,MAX_PLOTS):
-			if(self.toggles[i].toggle.isChecked()):
+		enabled = []													# list containing true/false values for each graph
+		for i in range(0,MAX_PLOTS):									# the list is of lenght MAX_PLOTS
+			if(self.toggles[i].toggle.isChecked()):						# it updates its value with the toggle assigned to each of the graphs.
 				enabled.append(True)
 			else:
 				enabled.append(False)		
 			
-		self.graph.set_enabled_graphs(enabled)
+		self.graph.set_enabled_graphs(enabled)							# update enabled grapgs
 		
-		self.graph.dataset = self.dataset
+		self.graph.dataset = self.dataset								# update dataset MAY NOT BE BETTER TO DO THIS SOMEWHERE ELSE ???
 						
-		self.graph.on_plot_timer()										# calls the regular plot timer from graph.
+		self.graph.update_graphs()										# calls the regular plot timer from graph.
 		
-	def plot_timer_start(self):											
-		self.graph.timer.start()
+	# def plot_timer_start(self):	# SEEMS UNUSED AND UNNECESSARY !!!
+	# 	self.graph.timer.start()
 
 	def update(self):													# notifies a change in the dataset
 		self.graph.dataset_changed = True								# flag
@@ -313,7 +326,7 @@ if __name__ == "__main__":
 
 		n_plots = 6
 		# class variables #
-		data_tick_ms = 20
+		data_tick_ms = 10
 
 		#creating a fixed size dataset #
 		dataset = []
@@ -365,9 +378,13 @@ if __name__ == "__main__":
 			
 			line = []
 			for i in range(0,self.n_plots):
-					line.append(random.randrange(0,100))	
-			self.dataset.append(line)
-					
+					line.append(random.randrange(0,100))
+					self.dataset.append(line)
+					# line.append(random.randrange(0, 80))
+					# self.dataset.append(line)
+					# line.append(random.randrange(0, 120))
+					# self.dataset.append(line)
+
 			# print("self.dataset")
 			# for data in self.dataset:
 			# 	print(data)

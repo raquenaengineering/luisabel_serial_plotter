@@ -3,6 +3,7 @@
 """
 Function to convert arduino data into values
 """
+# from pyqtgraph.util.glinfo import print_version
 
 START_OF_TEXT = '"'
 END_OF_TEXT = '#'
@@ -11,7 +12,11 @@ END_OF_TEXT = '#'
 arduino_test_text: str = '1,3,24,12,2;"caption 1, caption 2, cara de pene, aaa# 10,10,20,250,111; 100,100,3;'
 
 def arduino_parser(readed):											# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
-
+	"""
+	
+	:param readed: reads arduino styled serial plotting data
+	:return: 
+	"""
 	vals = readed.replace(' ' ,',')									# replace empty spaces for commas.
 	vals = vals.replace(':' ,',')									# fast fix for inline labels incompatibility. MAKE IT BETTER !!!
 	vals = vals.split(',')											# arduino serial plotter splits with both characters.
@@ -52,9 +57,10 @@ def arduino_parser(readed):											# perform data processing as required (STA
 				text_vals.append(val)
 				# self.plot_frame.set_channels_labels(text_vals)	# !!! NOTHING TO DO WITH PARSING
 			else:
-				self.add_values_to_dataset(valsf)					# !!! NOTHING TO DO WITH PARSING
+				pass
+				# self.add_values_to_dataset(valsf)					# !!! NOTHING TO DO WITH PARSING
 
-		self.plot_frame.update()
+		# self.plot_frame.update()
 	# print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 
 	return(valsf, captions)
@@ -163,3 +169,7 @@ def arduino_parser(readed):											# perform data processing as required (STA
 
 if __name__ == "__main__":
 	values,captions = arduino_parser(arduino_test_text)
+	print("values")
+	print(values)
+	print("captions")
+	print(captions)

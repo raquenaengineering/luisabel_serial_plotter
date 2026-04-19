@@ -5,23 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="53b2ca9e-13fd-40c8-b93f-b67098dde959" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/parsers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PYCHARM.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/main.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/qbluetooth_test.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/range_widget.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/serial_speed_test.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/shortcuts.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/socket_widget.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/my_graph.py" beforeDir="false" afterPath="$PROJECT_DIR$/my_graph.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parsers.py" beforeDir="false" afterPath="$PROJECT_DIR$/parsers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/re_pyqt_widgets" beforeDir="false" afterPath="$PROJECT_DIR$/re_pyqt_widgets" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/re_pyqt_widgets/serial_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/re_pyqt_widgets/serial_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/re_pyqt_widgets/terminal_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/re_pyqt_widgets/terminal_widget.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,6 +50,7 @@
     "Python.main.executor": "Run",
     "Python.main_window.executor": "Run",
     "Python.my_graph.executor": "Run",
+    "Python.parsers.executor": "Run",
     "Python.pyqt_custom_palettes.executor": "Run",
     "Python.qbluetooth_test.executor": "Run",
     "Python.range_dialog.executor": "Run",
@@ -107,7 +97,8 @@
       <option name="presentableId" value="Default" />
       <updated>1775303426091</updated>
       <workItem from="1776428006938" duration="21333000" />
-      <workItem from="1776511563015" duration="11790000" />
+      <workItem from="1776511563015" duration="17950000" />
+      <workItem from="1776596362091" duration="2600000" />
     </task>
     <servers />
   </component>
@@ -130,12 +121,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/re_pyqt_widgets/serial_widget.py</url>
-          <line>641</line>
+          <line>648</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main_window.py</url>
-          <line>761</line>
+          <line>535</line>
           <option name="timeStamp" value="12" />
         </line-breakpoint>
       </breakpoints>
@@ -144,17 +135,18 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$qbluetooth_test.coverage" NAME="qbluetooth_test Coverage Results" MODIFIED="1776432336840" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$signals_test.coverage" NAME="signals_test Coverage Results" MODIFIED="1776439990054" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/re_pyqt_widgets" />
+    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$parsers.coverage" NAME="parsers Coverage Results" MODIFIED="1776598885300" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$shortcuts_widget.coverage" NAME="shortcuts_widget Coverage Results" MODIFIED="1776432108977" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/re_pyqt_widgets" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$main.coverage" NAME="main Coverage Results" MODIFIED="1776441538349" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$colorbutton.coverage" NAME="colorbutton Coverage Results" MODIFIED="1776437590700" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/.venv/Lib/site-packages/qtwidgets/colorbutton" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$terminal_widget.coverage" NAME="terminal_widget Coverage Results" MODIFIED="1776509598010" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/re_pyqt_widgets" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$pyqt_custom_palettes.coverage" NAME="pyqt_custom_palettes Coverage Results" MODIFIED="1776431402492" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pyqt_common_resources" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$labelled_animated_toggle.coverage" NAME="labelled_animated_toggle Coverage Results" MODIFIED="1776438990333" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1776562657425" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1776598486418" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$serial_speed_test.coverage" NAME="serial_speed_test Coverage Results" MODIFIED="1776432477557" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$range_dialog.coverage" NAME="range_dialog Coverage Results" MODIFIED="1776438723979" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$serial_widget.coverage" NAME="serial_widget Coverage Results" MODIFIED="1776515964846" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/re_pyqt_widgets" />
-    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$my_graph.coverage" NAME="my_graph Coverage Results" MODIFIED="1776563603714" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$serial_widget.coverage" NAME="serial_widget Coverage Results" MODIFIED="1776591700952" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/re_pyqt_widgets" />
+    <SUITE FILE_PATH="coverage/luisabel_serial_plotter$my_graph.coverage" NAME="my_graph Coverage Results" MODIFIED="1776593749869" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/luisabel_serial_plotter$socket_widget.coverage" NAME="socket_widget Coverage Results" MODIFIED="1776441371131" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/re_pyqt_widgets" />
   </component>
 </project>

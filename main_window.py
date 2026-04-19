@@ -14,6 +14,8 @@ import logging
 #logging.basicConfig(level=logging.DEBUG)			# enable debug messages
 from future.utils import text_type
 
+import parsers
+
 logging.basicConfig(level = logging.WARNING)
 
 # custom packages #
@@ -74,8 +76,10 @@ from PySide6.QtCore import(
 SERIAL_BUFFER_SIZE = 10000												# buffer size to store the incoming data from serial, to afterwards process it.
 SEPARATOR = "----------------------------------------------------------"
 
+DATA_PERIOD = 1000
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
 POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
+
 
 # THREAD STUFF #  (not needed ATM)
 
@@ -83,27 +87,31 @@ POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the numbe
 # MAIN WINDOW #			
 
 class MainWindow(QMainWindow): 
-	
-	# class variables #
-	# serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
-	# serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
-	# serial_port_name = None												# used to pass it to the worker dealing with the serial port.
-	# serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
-	# endline = '\r\n'													# default value for endline is CR+NL
+	"""
+	Main window of our application:
+	Contains:
+	serial_widget
+		- buttons
+		- log window
+	socket_wiget		--> hidden by default, when changing to socket view, hide serial_widget instead.
+		- buttons
+		- log window
+	plot_graph
+	"""
 
-
-
+	PERIOD_DATA_TIMER = DATA_PERIOD
+	PERIOD_RECORD_TIMER = RECORD_PERIOD
 
 	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
-	full_screen_flag = False
-	dataset = []														# dataset containing the data to be plotter/recorded.
+	full_screen_flag = False											# to handle full screen with shortcuts
+	dataset = []														# dataset containing the data to be plotter/recorded. DO I REALLY NEED THIS DATASET HERE; OR CAN I SIMPLY RELAY ON THE DATASET OF PLOT/GRAPH?
 	log_folder = "logs"													# in the beginning, log folder, path and filename are fixed
 	log_file_name = "log_file"											# at some point, path needs to be selected by user.
 	log_file_type = ".csv"												# file extension
-	n_logs = 0 
+	n_logs = 0															# ???
 	log_full_path = None												# this variable will be the one used to record 
-	timeouts = 0
+	timeouts = 0														# ???
 	parsing_style = "arduino"											# defines the parsing style, for now Arduino, or EMG
 	read_buffer = ""													# if change to default parsing emg style: read_buffer = [], all chars read from serial come here, should it go somewhere else?
 	recording = False													# flag to start/stop recording.
@@ -117,23 +125,22 @@ class MainWindow(QMainWindow):
 		
 		self.init_dataset()
 
+
+		# data input timer, every fixed time checks for new data #
+		self.data_timer = QTimer()										# we'll use timer instead of thread
+		self.data_timer.timeout.connect(self.on_data_timer)				# connect with callback
+		self.data_timer.start(self.PERIOD_DATA_TIMER)					# period needs to be relatively short
+		# self.data_timer.stop()										# by default the timer will be off, enabled by connect.
+
+
+
 		# timer to record data onto file periodically (DELETES OLD DATA IF RECORD NOT ENABLED)#
 		self.record_timer = QTimer()
 		self.record_timer.timeout.connect(self.on_record_timer)			# will be enabled / disabled via button
-		self.record_timer.start(RECORD_PERIOD)							# deploys data onto file once a second
+		self.record_timer.start(self.PERIOD_RECORD_TIMER)				# deploys data onto file once a second
 		self.record_timer.stop()
-		# serial timer #
-		self.data_timer = QTimer()									# we'll use timer instead of thread
-		self.data_timer.timeout.connect(self.on_data_timer)
-		self.data_timer.start(50)										# period needs to be relatively short
-		# self.data_timer.stop()										# by default the timer will be off, enabled by connect.
-		# update serial ports timer #
-		self.update_ports_timer = QTimer()
-		self.update_ports_timer.timeout.connect(
-			self.update_serial_ports)									# updating serial port list in a regular time basis. 
-		self.update_ports_timer.start(3000)								# every  3 seconds seems reasonable.
-		self.update_ports_timer.stop()
-			
+
+
 
 		# shortcuts moved to the bottom #
 
@@ -142,7 +149,7 @@ class MainWindow(QMainWindow):
 		self.setPalette(self.palette)
 		
 		# window stuff #
-		self.setWindowTitle("Luisabel EMG Plotter")					# relevant title
+		self.setWindowTitle("Luisabel Plotter")							# relevant title
 		self.setWindowIcon(QIcon("RE_logo_32p.png"))					# basic raquena engineering branding
 		self.resize(1200,800)											# setting initial window size
 		# menubar #
@@ -244,60 +251,7 @@ class MainWindow(QMainWindow):
 		# ~ self.autoscale_toggle = LabelledAnimatedToggle(color = "#ffffff",label_text = "Autoscale")
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
 
-
-		###########
-
-
-		# THIS ALL BELONGS TO SERIAL / SOCKET WIDGET ## REPLACE FOR WIDGET!!############################################
-				
-		# # buttons / menus #
-		# self.layoutH1 = QHBoxLayout()
-		# self.layoutV1.addLayout(self.layoutH1)
-		# # connect button #
-		# self.button_serial_connect = QPushButton("Connect")
-		# self.button_serial_connect.clicked.connect(self.on_button_connect_click)
-		# self.layoutH1.addWidget(self.button_serial_connect)
-		# # disconnect button #
-		# self.button_serial_disconnect = QPushButton("Disconnect")
-		# self.button_serial_disconnect.clicked.connect(self.on_button_disconnect_click)
-		# self.button_serial_disconnect.setEnabled(False)
-		# self.layoutH1.addWidget(self.button_serial_disconnect)
-		# # combo serial port #
-		# self.combo_serial_port = QComboBox()
-		# self.layoutH1.addWidget(self.combo_serial_port)
-		# self.update_serial_ports()
-		# self.combo_serial_port.currentTextChanged.connect(				# changing something at this label, triggers on_port select, which should trigger a serial port characteristics update.
-		# 	self.on_port_select)
-		# self.label_port = QLabel("Port")
-		# self.layoutH1.addWidget(self.label_port)
-		# # combo serial speed #
-		# self.combo_serial_speed = QComboBox()
-		# self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
-		# self.combo_serial_speed.addItems(SERIAL_SPEEDS)
-		# self.combo_serial_speed.setCurrentIndex(SERIAL_SPEEDS.index(str(self.serial_baudrate)))						# this index corresponds to 250000 as default baudrate.
-		# self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
-		# 	self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?)
-		# self.layoutH1.addWidget(self.combo_serial_speed)				#
-		# self.label_baud = QLabel("baud")
-		# self.layoutH1.addWidget(self.label_baud)
-		# # text box command #
-		# self.textbox_send_command = QLineEdit()
-		# self.textbox_send_command.returnPressed.connect(self.send_serial)	# sends command via serial port
-		# self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
-		# self.layoutH1.addWidget(self.textbox_send_command)
-		# # send button #
-		# self.b_send = QPushButton("Send")
-		# self.b_send.clicked.connect(self.send_serial)					# same action as enter in textbox
-		# self.layoutH1.addWidget(self.b_send)
-		# # combo endline #
-		# self.combo_endline_params = QComboBox()
-		# self.combo_endline_params.addItems(ENDLINE_OPTIONS)
-		# self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
-		# self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
-		# self.layoutH1.addWidget(self.combo_endline_params)
-		#
-
-		# thats all what we need now #
+		# SERIAL WIDGET #
 		self.serial_widget = serial_widget()
 		self.layoutV1.addWidget(self.serial_widget)
 
@@ -312,13 +266,6 @@ class MainWindow(QMainWindow):
 		
 		# show and done #		
 		self.show()
-		
-		# other stuff which can't be done before #
-		# self.serial_port_name = self.combo_serial_port.currentText()
-		# self.serial_baudrate = int(self.combo_serial_speed.currentText())
-		# self.serial_baudrate = ...
-		# self.endline = ...
-		
 
 	# # on close #
 	#
@@ -336,6 +283,12 @@ class MainWindow(QMainWindow):
 	# actions #		
 	
 	def set_logfile(self):	
+		"""
+		Every time the record button is pressed, a new log file is created
+		This method is in charge of creating the folder where the log files 
+		will be saved, and each of the log files.
+		:return: None
+		"""
 		# 1. be sure the folder where the log file should be placed exists
 		# logs folder #
 		print("Log file name:")
@@ -357,176 +310,9 @@ class MainWindow(QMainWindow):
 			self.n_logs = self.n_logs + 1
 		
 		self.log_full_path = fullpath;
+
 	
-		
-	# def send_serial(self, command = None):										# if no command, we get text from textbox, if command, we send what we got internally
-	# 	logging.debug("Send Serial")
-	# 	if(command == None):
-	# 		command = self.textbox_send_command.text()								# get what's on the textbox.
-	# 		self.textbox_send_command.setText("")
-	# 	# here the serial send command #
-	# 	self.serial_message_to_send = command.encode('utf-8')					# this should have effect on the serial_thread
-	#
-	# 	logging.debug("serial_message_to_send")
-	# 	logging.debug(self.serial_message_to_send)
-	# 	self.serial_port.write(self.serial_message_to_send)
-	
-	# other methods # 
-		
-# '	def get_serial_ports(self):			# REWRITE THIS FUNCTION TO USE A DICTIONARY, AND MAKE IT WAY CLEANER !!!
-#
-# 		logging.debug('Running get_serial_ports')
-# 		serial_port = None
-# 		self.serial_ports = list(serial.tools.list_ports.comports())	# THIS IS THE ONLY PLACE WHERE THE OS SERIAL PORT LIST IS READ.
-#
-# 		port_names = []		# we store all port names in this variable
-# 		port_descs = []		# all descriptions
-# 		port_btenums = []	# all bluetooth enumerations, if proceeds
-# 		for port in self.serial_ports:
-# 			port_names.append(port[0])	# here all names get stored
-# 			port_descs.append(port[1])
-# 			port_btenums.append(port[2])
-#
-# 		for name in port_names:
-# 			logging.debug(name)
-# 		logging.debug("---------------------------------------------------")
-#
-# 		for desc in port_descs:
-# 			logging.debug(desc)
-# 		logging.debug("---------------------------------------------------")
-#
-# 		for btenum in port_btenums:
-# 			logging.debug(btenum)
-# 		logging.debug("---------------------------------------------------")
-#
-# 		# remove bad BT ports (windows creates 2 ports, only one is useful to connect)
-#
-# 		for port in self.serial_ports:
-#
-# 			port_desc = port[1]
-#
-# 			if (port_desc.find("Bluetooth") != -1):						# Bluetooth found on description,so is a BT port (good or bad, dunno yet)
-#
-# 				# Using the description as the bt serial ports to find out the "good" bluetooth port.
-# 				port_btenum = port[2]
-# 				port_btenum = str(port_btenum)
-# 				splitted_enum = port_btenum.split('&')
-# 				logging.debug(splitted_enum)							# uncomment this to see why this parameter was used to differentiate bt ports.
-# 				last_param = splitted_enum[-1]							# this contains the last parameter of the bt info, which is different between incoming and outgoing bt serial ports.
-# 				last_field = last_param.split('_')						# here there is the real difference between the two created com ports
-# 				last_field = last_field[-1]								# we get only the part after the '_'
-# 				logging.debug(last_field)
-#
-# 				if(last_field == "C00000000"):							# this special string is what defines what are the valid COM ports.
-# 					discarded = 0										# the non-valid COM ports have a field liked this: "00000001", and subsequent.
-# 				else:
-# 					discarded = 1
-# 					logging.debug("This port should be discarded!")
-# 					self.serial_ports.remove(port)						# removes by matching description
-
-	# def change_serial_speed(self):										# this function is useless ATM, as the value is asked when serial open again.
-	# 	logging.debug("change_serial_speed method called")
-	# 	text_baud = self.combo_serial_speed.currentText()
-	# 	baudrate = int(text_baud)
-	# 	#self.serial_port.baudrate.set(baudrate)
-	# 	self.serial_baudrate = baudrate
-	# 	logging.debug(text_baud)
-		
-	# def change_endline_style(self):										# this and previous method are the same, use lambdas?
-	# 	logging.debug("change_endline_speed method called")
-	# 	endline_style = self.combo_endline_params.currentText()
-	# 	logging.debug(endline_style)
-	# 	# FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
-	# 	if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
-	# 		self.endline = b""
-	# 	elif (endline_style == ENDLINE_OPTIONS[1]):						# "New Line"
-	# 		self.endline = b"\n"
-	# 	elif (endline_style == ENDLINE_OPTIONS[2]):						# "Carriage Return"
-	# 		self.endline = b"\r"
-	# 	elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
-	# 		self.endline = b"\r\n"
-	#
-	# 	logging.debug(self.endline)
-		
-	# def on_button_connect_click(self):									# this button changes text to disconnect when a connection is succesful.
-	# 	logging.debug("Connect Button Clicked")									# how to determine a connection was succesful ???
-	# 	self.button_serial_connect.setEnabled(False)
-	# 	self.button_serial_disconnect.setEnabled(True)
-	# 	self.combo_serial_port.setEnabled(False)
-	# 	self.combo_serial_speed.setEnabled(False)
-	# 	self.combo_endline_params.setEnabled(False)
-	# 	self.textbox_send_command.setEnabled(True)
-	# 	self.button_pause.setEnabled(True)
-	# 	self.record_timer.start()
-	# 	self.plot_frame.dataset = self.dataset
-	# 	self.status_bar.showMessage("Connecting...")					# showing sth is happening.
-	# 	self.plot_frame.enable_toggles("all")
-	# 	self.start_serial()
-	# 	self.setup_slave()												# depending on the choosen mode, there are some requirements to start getting data.
-	# 	self.on_button_play()
-	#
-	# 	self.first_toggles = 0
-	#
-
-	# def serial_connect(self, port_name):
-	# 	logging.debug("serial_connect method called")
-	# 	logging.debug(port_name)
-	# 	logging.debug("port name " + port_name)
-	#
-	# 	try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
-	# 		self.serial_port.close()
-	# 		logging.debug("Serial port closed")
-	# 		logging.debug("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
-	# 	except:
-	# 		logging.debug("serial port couldn't be closed")
-	# 		logging.debug("Wasn't open, as it should always be")
-	#
-	#
-	# 	try:															# try to establish serial connection
-	# 		self.serial_port = serial.Serial(							# serial constructor
-	# 			port=port_name,
-	# 			baudrate= self.serial_baudrate,
-	# 			#baudrate = 115200,
-	# 			#bytesize=EIGHTBITS,
-	# 			#parity=PARITY_NONE,
-	# 			#stopbits=STOPBITS_ONE,
-	# 			#timeout=None,
-	# 			timeout=0,												# whenever there's no dat on the buffer, returns inmediately (spits '\0')
-	# 			xonxoff=False,
-	# 			rtscts=False,
-	# 			write_timeout=None,
-	# 			dsrdtr=False,
-	# 			inter_byte_timeout=None,
-	# 			exclusive=None
-	# 			)
-	#
-	# 	except Exception as e:											# both port open, and somebody else blocking the port are IO errors.
-	# 		logging.debug("ERROR OPENING SERIAL PORT")
-	# 		self.on_port_error(e)
-	#
-	# 	except:
-	# 		logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
-	#
-	# 	else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
-	# 		logging.debug("SERIAL CONNECTION SUCCESFUL !")
-	# 		self.status_bar.showMessage("Connected")
-	# 		# here we should also add going  to the "DISCONNECT" state.
-	#
-	# 	logging.debug("serial_port.is_open:")
-	# 	logging.debug(self.serial_port.is_open)
-	# 	logging.debug("done: ")
-	# 	#logging.debug(self.done)
-
-
-	# NOT BELONGING TO PLOTTER; BUT TO SERIAL PORT WIDGET #
-	# def start_serial(self):
-	# 	# first ensure connection is properly made
-	# 	self.serial_connect(self.serial_port_name)
-	# 	# 2. move status to connected
-	# 	# 3. start the timer to collect the data
-	# 	self.serial_timer.start()
-	# 	# 4. Initialization stuff required by the remote serial device:
-	# 	# self.init_emg_sensor()		# THIS DOESNT BELONG TO THE PLOTTER !!!
+	# other methods #
 
 	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
 	# def init_emg_sensor(self):
@@ -541,32 +327,8 @@ class MainWindow(QMainWindow):
 	# 	# self.serial_port.write(self.serial_message_to_send)
 	# 	pass
 
-	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
-	# def on_button_disconnect_click(self):
-	# 	print("Disconnect Button Clicked")
-	# 	self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
-	# 	self.button_serial_connect.setEnabled(True)
-	# 	self.combo_serial_port.setEnabled(True)
-	# 	self.combo_serial_speed.setEnabled(True)
-	# 	self.combo_endline_params.setEnabled(True)
-	# 	self.textbox_send_command.setEnabled(False)
-	# 	self.status_bar.showMessage("Disconnected")						# showing sth is happening.
-	# 	self.plot_frame.clear_plot()									# clear plot
-	# 	self.clear_dataset()
-	# 	self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
-	# 	print("self.plot_frame.dataset")
-	# 	print(self.plot_frame.dataset)
-	# 	self.plot_frame.clear_channels_labels()
-	# 	self.plot_frame.check_toggles("none")
-	# 	self.plot_frame.enable_toggles("none")
-	# 	self.serial_port.close()
-	# 	self.serial_timer.stop()
-	# 	self.plot_frame.plot_timer.stop()
-	# 	self.on_record_timer()											# this should save what's left to the file and clear the dataset
-	# 	self.on_button_stop()											# and this should disable the recording, if we disconnect the serial port
-	# 	self.record_timer.stop()
-	# 	print(SEPARATOR)
 
+	# Buttons for pausing the graph and recording data #
 
 	def on_button_pause(self):
 		# pause the plot:
@@ -612,18 +374,8 @@ class MainWindow(QMainWindow):
 		# 	self.button_autoscale.setEnabled(True)
 		# 	self.button_autoscale.setChecked(False)
 
-					
-	# def on_port_select(self,port_name):									# callback when COM port is selected at the menu.
-	# 	#1. get the selected port name via the text.
-	# 	#2. delete the old list, and regenerate it, so when we push again the com port list is updated.
-	# 	#3. create a thread for whatever related with the serial communication, and start running it.
-	# 	#. open a serial communication. --> this belongs to the thread.
-	#
-	# 	# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
-	# 	#self.serial_connect(port_name)
-	# 	logging.debug("Method on_port_select called	")
-	# 	self.serial_port_name = port_name
-	# 	logging.debug(self.serial_port_name)
+
+	# methods for keyboard shortcuts #
 
 	def on_arrow_up(self):
 		print("on_arrow_up method called")
@@ -660,20 +412,32 @@ class MainWindow(QMainWindow):
 		self.plot_frame.graph.setRange(xRange = x_axis)	
 
 	def start_recording(self):
+		"""
+		Called when pressing record button
+		sets the file where the data will be saved
+		sets the recording flag, so  when on_record_timer is  called, data is stored to file.
+		:return:
+		"""
 		self.set_logfile()
 		self.recording = True
 		
 	def stop_recording(self):
+		"""
+		Called when stop button is pressed
+		Resets recording flag, so no more data is stored.
+		:return:
+		"""
 		self.recording = False
 
 	def on_record_timer(self):
+		"""
+		Callback for the record timer.
+		When in recording mode, stores the data into a file.
+		:return: None
+		"""
 		#print("on_record_timer method called:")
-		t0 = time.time()
-		
-			# ~ print("self.dataset")
-			# ~ for line in self.dataset:
-				# ~ print(line)
-		
+		# t0 = time.time()
+
 		if(self.recording == True):
 			print("saving data to file")
 			# ~ np_data = np.array(self.dataset)
@@ -689,38 +453,48 @@ class MainWindow(QMainWindow):
 				for value in self.dataset[0:self.n_data_points]:						# only record the first "POINT_PER_PLOT" data points.
 					dataset_writer.writerow(value)
 		
-		t = time.time()
-		dt = t-t0
+		# t = time.time()
+		# dt = t-t0
 		# print(dt)
 		# print(SEPARATOR)
 		#
 		# print("dataset lenght[0] on_record_timer():")
 		# print(len(self.dataset))										# we need to use the first item, as dataset will have a lenght depending on the number of plots received from Arduino.
 		# print("dataset lenght on_timer")
-		
-			
-		while(len(self.dataset) > 3*self.n_data_points):					# this ensures there's always enough data to plot the whole window.
-			logging.debug("Dataset removing some points")
+
+		# WHAT IS THIS? THIS IS PART OF THE RECORD ???
+		while(len(self.dataset) > 3*self.n_data_points):						# this ensures there's always enough data to plot the whole window.
+			logging.warning("Dataset removing some points")
 			# ~ for i in range(self.n_data_points-1):
 				# ~ self.dataset.pop()
 			logging.debug(len(self.dataset))
-			self.dataset = self.dataset[self.n_data_points:]				# removes the first "self.n_data_points" values from the dataset.
+			self.dataset = self.dataset[self.n_data_points:]					# removes the first "self.n_data_points" values from the dataset.
 			logging.debug(len(self.dataset))
 			self.plot_frame.dataset = self.dataset
 			#self.clear_dataset()	# doesn't make any difference
-			self.plot_frame.dataset_changed = True						# if we remove a part of the dataset, it is indeed changing. 
+			self.plot_frame.dataset_changed = True								# if we remove a part of the dataset, it is indeed changing.
 			logging.debug("dataset_length after removing some points")
 			logging.debug(len(self.dataset))
 
+
+
 	def on_data_timer(self):
-		print("On_data_timer method called")
-		byte_buffer = self.serial_widget.byte_buffer			# THIS IS ACTUALLY READING; BUT IT SEEMS IT READS AN EMPTY BUFFER
+		"""
+
+		:return:
+		"""
+
+		("On_data_timer method called")
+		byte_buffer = self.serial_widget.byte_buffer							# THIS IS ACTUALLY READING; BUT IT SEEMS IT READS AN EMPTY BUFFER
+
+		new_data_points = parsers.arduino_parser(byte_buffer)
+		print(new_data_points)
 
 		print("Byte Buffer: ", byte_buffer)
 
-		data = self.serial_widget.incoming_lines				# COPY BUFFER TO USE IT LATER ON
+		data = self.serial_widget.incoming_lines								# COPY BUFFER TO USE IT LATER ON
 		print(data)
-		self.serial_widget.incoming_lines = []					# CLEAN BUFFER OR WE EXPLODE THE THING
+		self.serial_widget.incoming_lines = []									# CLEAN BUFFER OR WE EXPLODE THE THING
 
 
 		self.add_arduino_data()
@@ -778,7 +552,7 @@ class MainWindow(QMainWindow):
 			self.on_port_error(e)
 		else:
 			self.read_buffer = self.read_buffer + mid_buffer
-			data_points = self.read_buffer.split(self.serial_widget.endline)
+			data_points = self.read_buffer.split(str(self.serial_widget.endline))
 			self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
 			a = data_points[:-1]
 			for data_point in a:  # so all data points except last.
