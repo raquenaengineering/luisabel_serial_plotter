@@ -22,6 +22,7 @@ from pyqt_common_resources import pyqt_custom_palettes				# moved to an independ
 from my_graph import MyPlot
 import my_graph														# for the global variables of the namespace.
 from re_pyqt_widgets.shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
+from re_pyqt_widgets.serial_widget import serial_widget				# all serial is now handled by this widget
 from range_dialog import RangeDialog
 
 # qt imports #
@@ -73,32 +74,6 @@ from PySide6.QtCore import(
 SERIAL_BUFFER_SIZE = 10000												# buffer size to store the incoming data from serial, to afterwards process it.
 SEPARATOR = "----------------------------------------------------------"
 
-
-SERIAL_SPEEDS = [
-	"300",
-	"1200",
-	"2400",
-	"4800",
-	"9600",
-	"19200",
-	"38400",
-	"57600",
-	"74880",
-	"115200",
-	"230400",
-	"250000",
-	"500000",
-	"1000000",
-	"2000000"
-]
-
-ENDLINE_OPTIONS = [
-	"No Line Adjust",
-	"New Line",
-	"Carriage Return",
-	"Both NL & CR"
-]
-
 RECORD_PERIOD = 1000 													# time in ms between two savings of the recorded data onto file
 POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the number of dots to be plotted at each iteration
 
@@ -110,11 +85,15 @@ POINTS_PER_PLOT = 2000													# width of x axis, corresponding to the numbe
 class MainWindow(QMainWindow): 
 	
 	# class variables #
-	serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
-	serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
-	serial_port_name = None												# used to pass it to the worker dealing with the serial port.
-	serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
-	endline = '\r\n'													# default value for endline is CR+NL 
+	# serial_ports = list													# list of serial ports detected, probably this is better somewhere else !!!
+	# serial_port = None													# maybe better to decleare it somewhere else ??? serial port used for the comm.
+	# serial_port_name = None												# used to pass it to the worker dealing with the serial port.
+	# serial_baudrate = 115200											# default baudrate, ALL THOSE VARIABLES SHOULD CONNECT TO WORKER_SERIALPORT!
+	# endline = '\r\n'													# default value for endline is CR+NL
+
+
+
+
 	error_type = None													# used to try to fix the problem with dialog window, delete if can't fix !!!
 	serial_message_to_send = None										# if not none, is a message to be sent via serial port (the worker sends)
 	full_screen_flag = False
@@ -144,10 +123,10 @@ class MainWindow(QMainWindow):
 		self.record_timer.start(RECORD_PERIOD)							# deploys data onto file once a second
 		self.record_timer.stop()
 		# serial timer #
-		self.serial_timer = QTimer()									# we'll use timer instead of thread
-		self.serial_timer.timeout.connect(self.on_serial_timer)
-		self.serial_timer.start(50)										# period needs to be relatively short
-		self.serial_timer.stop()										# by default the timer will be off, enabled by connect.
+		self.data_timer = QTimer()									# we'll use timer instead of thread
+		self.data_timer.timeout.connect(self.on_data_timer)
+		self.data_timer.start(50)										# period needs to be relatively short
+		# self.data_timer.stop()										# by default the timer will be off, enabled by connect.
 		# update serial ports timer #
 		self.update_ports_timer = QTimer()
 		self.update_ports_timer.timeout.connect(
@@ -225,6 +204,10 @@ class MainWindow(QMainWindow):
 		self.plot_frame.enable_toggles("none")
 		self.plot_frame.check_toggles("none")
 		self.layout_plot.addWidget(self.plot_frame)
+		self.plot_frame.setVisible(True)
+
+
+		## THIS TO A NEW WIDGET ??? ##
 		# buttons for plot #
 		self.layout_player = QHBoxLayout()
 		self.layoutV1.addLayout(self.layout_player)
@@ -260,53 +243,66 @@ class MainWindow(QMainWindow):
 
 		# ~ self.autoscale_toggle = LabelledAnimatedToggle(color = "#ffffff",label_text = "Autoscale")
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
+
+
+		###########
+
+
+		# THIS ALL BELONGS TO SERIAL / SOCKET WIDGET ## REPLACE FOR WIDGET!!############################################
 				
-				
-		# buttons / menus # 
-		self.layoutH1 = QHBoxLayout()
-		self.layoutV1.addLayout(self.layoutH1)
-		# connect button #
-		self.button_serial_connect = QPushButton("Connect")
-		self.button_serial_connect.clicked.connect(self.on_button_connect_click)
-		self.layoutH1.addWidget(self.button_serial_connect)
-		# disconnect button #
-		self.button_serial_disconnect = QPushButton("Disconnect")
-		self.button_serial_disconnect.clicked.connect(self.on_button_disconnect_click)
-		self.button_serial_disconnect.setEnabled(False)
-		self.layoutH1.addWidget(self.button_serial_disconnect)
-		# combo serial port #
-		self.combo_serial_port = QComboBox()
-		self.layoutH1.addWidget(self.combo_serial_port)
-		self.update_serial_ports()
-		self.combo_serial_port.currentTextChanged.connect(				# changing something at this label, triggers on_port select, which should trigger a serial port characteristics update.
-			self.on_port_select)
-		self.label_port = QLabel("Port")
-		self.layoutH1.addWidget(self.label_port)
-		# combo serial speed #
-		self.combo_serial_speed = QComboBox()
-		self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
-		self.combo_serial_speed.addItems(SERIAL_SPEEDS)
-		self.combo_serial_speed.setCurrentIndex(SERIAL_SPEEDS.index(str(self.serial_baudrate)))						# this index corresponds to 250000 as default baudrate.
-		self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
-			self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?) 
-		self.layoutH1.addWidget(self.combo_serial_speed)				# 
-		self.label_baud = QLabel("baud")
-		self.layoutH1.addWidget(self.label_baud)
-		# text box command #
-		self.textbox_send_command = QLineEdit()
-		self.textbox_send_command.returnPressed.connect(self.send_serial)	# sends command via serial port
-		self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected. 
-		self.layoutH1.addWidget(self.textbox_send_command)
-		# send button # 
-		self.b_send = QPushButton("Send")											
-		self.b_send.clicked.connect(self.send_serial)					# same action as enter in textbox
-		self.layoutH1.addWidget(self.b_send)
-		# combo endline #
-		self.combo_endline_params = QComboBox()
-		self.combo_endline_params.addItems(ENDLINE_OPTIONS)
-		self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
-		self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
-		self.layoutH1.addWidget(self.combo_endline_params)
+		# # buttons / menus #
+		# self.layoutH1 = QHBoxLayout()
+		# self.layoutV1.addLayout(self.layoutH1)
+		# # connect button #
+		# self.button_serial_connect = QPushButton("Connect")
+		# self.button_serial_connect.clicked.connect(self.on_button_connect_click)
+		# self.layoutH1.addWidget(self.button_serial_connect)
+		# # disconnect button #
+		# self.button_serial_disconnect = QPushButton("Disconnect")
+		# self.button_serial_disconnect.clicked.connect(self.on_button_disconnect_click)
+		# self.button_serial_disconnect.setEnabled(False)
+		# self.layoutH1.addWidget(self.button_serial_disconnect)
+		# # combo serial port #
+		# self.combo_serial_port = QComboBox()
+		# self.layoutH1.addWidget(self.combo_serial_port)
+		# self.update_serial_ports()
+		# self.combo_serial_port.currentTextChanged.connect(				# changing something at this label, triggers on_port select, which should trigger a serial port characteristics update.
+		# 	self.on_port_select)
+		# self.label_port = QLabel("Port")
+		# self.layoutH1.addWidget(self.label_port)
+		# # combo serial speed #
+		# self.combo_serial_speed = QComboBox()
+		# self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
+		# self.combo_serial_speed.addItems(SERIAL_SPEEDS)
+		# self.combo_serial_speed.setCurrentIndex(SERIAL_SPEEDS.index(str(self.serial_baudrate)))						# this index corresponds to 250000 as default baudrate.
+		# self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
+		# 	self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?)
+		# self.layoutH1.addWidget(self.combo_serial_speed)				#
+		# self.label_baud = QLabel("baud")
+		# self.layoutH1.addWidget(self.label_baud)
+		# # text box command #
+		# self.textbox_send_command = QLineEdit()
+		# self.textbox_send_command.returnPressed.connect(self.send_serial)	# sends command via serial port
+		# self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
+		# self.layoutH1.addWidget(self.textbox_send_command)
+		# # send button #
+		# self.b_send = QPushButton("Send")
+		# self.b_send.clicked.connect(self.send_serial)					# same action as enter in textbox
+		# self.layoutH1.addWidget(self.b_send)
+		# # combo endline #
+		# self.combo_endline_params = QComboBox()
+		# self.combo_endline_params.addItems(ENDLINE_OPTIONS)
+		# self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
+		# self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
+		# self.layoutH1.addWidget(self.combo_endline_params)
+		#
+
+		# thats all what we need now #
+		self.serial_widget = serial_widget()
+		self.layoutV1.addWidget(self.serial_widget)
+
+		####################################################################
+
 		
 		# status bar #
 		self.status_bar = QStatusBar()
@@ -318,25 +314,25 @@ class MainWindow(QMainWindow):
 		self.show()
 		
 		# other stuff which can't be done before #
-		self.serial_port_name = self.combo_serial_port.currentText()
-		self.serial_baudrate = int(self.combo_serial_speed.currentText())	
+		# self.serial_port_name = self.combo_serial_port.currentText()
+		# self.serial_baudrate = int(self.combo_serial_speed.currentText())
 		# self.serial_baudrate = ...
 		# self.endline = ...
 		
 
-	# on close #
-		
-	def closeEvent(self, event):
-
-		print("CLOSING AND CLEANING UP:")
-		try:
-			print("Closing serial port")
-			self.serial_port.close()										# need to explicitly close the serial port to release it
-		except:
-			print("Couldn't close serial port, probably already closed / never open")
-		super().close()
-		#event.ignore()													# extremely useful to ignore the close event !
-	
+	# # on close #
+	#
+	# def closeEvent(self, event):
+	#
+	# 	print("CLOSING AND CLEANING UP:")
+	# 	try:
+	# 		print("Closing serial port")
+	# 		self.serial_port.close()										# need to explicitly close the serial port to release it
+	# 	except:
+	# 		print("Couldn't close serial port, probably already closed / never open")
+	# 	super().close()
+	# 	#event.ignore()													# extremely useful to ignore the close event !
+	#
 	# actions #		
 	
 	def set_logfile(self):	
@@ -363,209 +359,213 @@ class MainWindow(QMainWindow):
 		self.log_full_path = fullpath;
 	
 		
-	def send_serial(self, command = None):										# if no command, we get text from textbox, if command, we send what we got internally
-		logging.debug("Send Serial")
-		if(command == None):
-			command = self.textbox_send_command.text()								# get what's on the textbox.
-			self.textbox_send_command.setText("")
-		# here the serial send command # 
-		self.serial_message_to_send = command.encode('utf-8')					# this should have effect on the serial_thread
-
-		logging.debug("serial_message_to_send")
-		logging.debug(self.serial_message_to_send)
-		self.serial_port.write(self.serial_message_to_send)
+	# def send_serial(self, command = None):										# if no command, we get text from textbox, if command, we send what we got internally
+	# 	logging.debug("Send Serial")
+	# 	if(command == None):
+	# 		command = self.textbox_send_command.text()								# get what's on the textbox.
+	# 		self.textbox_send_command.setText("")
+	# 	# here the serial send command #
+	# 	self.serial_message_to_send = command.encode('utf-8')					# this should have effect on the serial_thread
+	#
+	# 	logging.debug("serial_message_to_send")
+	# 	logging.debug(self.serial_message_to_send)
+	# 	self.serial_port.write(self.serial_message_to_send)
 	
 	# other methods # 
 		
-	def get_serial_ports(self):			# REWRITE THIS FUNCTION TO USE A DICTIONARY, AND MAKE IT WAY CLEANER !!!
-				
-		logging.debug('Running get_serial_ports')
-		serial_port = None
-		self.serial_ports = list(serial.tools.list_ports.comports())	# THIS IS THE ONLY PLACE WHERE THE OS SERIAL PORT LIST IS READ. 	
+# '	def get_serial_ports(self):			# REWRITE THIS FUNCTION TO USE A DICTIONARY, AND MAKE IT WAY CLEANER !!!
+#
+# 		logging.debug('Running get_serial_ports')
+# 		serial_port = None
+# 		self.serial_ports = list(serial.tools.list_ports.comports())	# THIS IS THE ONLY PLACE WHERE THE OS SERIAL PORT LIST IS READ.
+#
+# 		port_names = []		# we store all port names in this variable
+# 		port_descs = []		# all descriptions
+# 		port_btenums = []	# all bluetooth enumerations, if proceeds
+# 		for port in self.serial_ports:
+# 			port_names.append(port[0])	# here all names get stored
+# 			port_descs.append(port[1])
+# 			port_btenums.append(port[2])
+#
+# 		for name in port_names:
+# 			logging.debug(name)
+# 		logging.debug("---------------------------------------------------")
+#
+# 		for desc in port_descs:
+# 			logging.debug(desc)
+# 		logging.debug("---------------------------------------------------")
+#
+# 		for btenum in port_btenums:
+# 			logging.debug(btenum)
+# 		logging.debug("---------------------------------------------------")
+#
+# 		# remove bad BT ports (windows creates 2 ports, only one is useful to connect)
+#
+# 		for port in self.serial_ports:
+#
+# 			port_desc = port[1]
+#
+# 			if (port_desc.find("Bluetooth") != -1):						# Bluetooth found on description,so is a BT port (good or bad, dunno yet)
+#
+# 				# Using the description as the bt serial ports to find out the "good" bluetooth port.
+# 				port_btenum = port[2]
+# 				port_btenum = str(port_btenum)
+# 				splitted_enum = port_btenum.split('&')
+# 				logging.debug(splitted_enum)							# uncomment this to see why this parameter was used to differentiate bt ports.
+# 				last_param = splitted_enum[-1]							# this contains the last parameter of the bt info, which is different between incoming and outgoing bt serial ports.
+# 				last_field = last_param.split('_')						# here there is the real difference between the two created com ports
+# 				last_field = last_field[-1]								# we get only the part after the '_'
+# 				logging.debug(last_field)
+#
+# 				if(last_field == "C00000000"):							# this special string is what defines what are the valid COM ports.
+# 					discarded = 0										# the non-valid COM ports have a field liked this: "00000001", and subsequent.
+# 				else:
+# 					discarded = 1
+# 					logging.debug("This port should be discarded!")
+# 					self.serial_ports.remove(port)						# removes by matching description
+
+	# def change_serial_speed(self):										# this function is useless ATM, as the value is asked when serial open again.
+	# 	logging.debug("change_serial_speed method called")
+	# 	text_baud = self.combo_serial_speed.currentText()
+	# 	baudrate = int(text_baud)
+	# 	#self.serial_port.baudrate.set(baudrate)
+	# 	self.serial_baudrate = baudrate
+	# 	logging.debug(text_baud)
 		
-		port_names = []		# we store all port names in this variable
-		port_descs = []		# all descriptions
-		port_btenums = []	# all bluetooth enumerations, if proceeds
-		for port in self.serial_ports:
-			port_names.append(port[0])	# here all names get stored
-			port_descs.append(port[1])
-			port_btenums.append(port[2])
-			
-		for name in port_names:
-			logging.debug(name)
-		logging.debug("---------------------------------------------------")
-
-		for desc in port_descs:
-			logging.debug(desc)
-		logging.debug("---------------------------------------------------")
-
-		for btenum in port_btenums:
-			logging.debug(btenum)
-		logging.debug("---------------------------------------------------")
-						
-		# remove bad BT ports (windows creates 2 ports, only one is useful to connect)
+	# def change_endline_style(self):										# this and previous method are the same, use lambdas?
+	# 	logging.debug("change_endline_speed method called")
+	# 	endline_style = self.combo_endline_params.currentText()
+	# 	logging.debug(endline_style)
+	# 	# FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
+	# 	if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
+	# 		self.endline = b""
+	# 	elif (endline_style == ENDLINE_OPTIONS[1]):						# "New Line"
+	# 		self.endline = b"\n"
+	# 	elif (endline_style == ENDLINE_OPTIONS[2]):						# "Carriage Return"
+	# 		self.endline = b"\r"
+	# 	elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
+	# 		self.endline = b"\r\n"
+	#
+	# 	logging.debug(self.endline)
 		
-		for port in self.serial_ports:
-			
-			port_desc = port[1]
-			
-			if (port_desc.find("Bluetooth") != -1):						# Bluetooth found on description,so is a BT port (good or bad, dunno yet)
-				
-				# Using the description as the bt serial ports to find out the "good" bluetooth port.
-				port_btenum = port[2]
-				port_btenum = str(port_btenum)
-				splitted_enum = port_btenum.split('&')
-				logging.debug(splitted_enum)							# uncomment this to see why this parameter was used to differentiate bt ports.
-				last_param = splitted_enum[-1]							# this contains the last parameter of the bt info, which is different between incoming and outgoing bt serial ports. 
-				last_field = last_param.split('_')						# here there is the real difference between the two created com ports
-				last_field = last_field[-1]								# we get only the part after the '_'
-				logging.debug(last_field)
-				
-				if(last_field == "C00000000"):							# this special string is what defines what are the valid COM ports.
-					discarded = 0										# the non-valid COM ports have a field liked this: "00000001", and subsequent.
-				else:
-					discarded = 1
-					logging.debug("This port should be discarded!")
-					self.serial_ports.remove(port)						# removes by matching description
-		
-	def change_serial_speed(self):										# this function is useless ATM, as the value is asked when serial open again.
-		logging.debug("change_serial_speed method called")
-		text_baud = self.combo_serial_speed.currentText()
-		baudrate = int(text_baud)
-		#self.serial_port.baudrate.set(baudrate)	
-		self.serial_baudrate = baudrate			
-		logging.debug(text_baud)
-		
-	def change_endline_style(self):										# this and previous method are the same, use lambdas?
-		logging.debug("change_endline_speed method called")
-		endline_style = self.combo_endline_params.currentText()
-		logging.debug(endline_style)
-		# FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
-		if(endline_style == ENDLINE_OPTIONS[0]):						# "No Line Adjust"
-			self.endline = b""
-		elif (endline_style == ENDLINE_OPTIONS[1]):						# "New Line"
-			self.endline = b"\n"				
-		elif (endline_style == ENDLINE_OPTIONS[2]):						# "Carriage Return"
-			self.endline = b"\r"		
-		elif (endline_style == ENDLINE_OPTIONS[3]):						# "Both NL & CR"
-			self.endline = b"\r\n"	
-			
-		logging.debug(self.endline)			
-		
-	def on_button_connect_click(self):									# this button changes text to disconnect when a connection is succesful.
-		logging.debug("Connect Button Clicked")									# how to determine a connection was succesful ???
-		self.button_serial_connect.setEnabled(False)
-		self.button_serial_disconnect.setEnabled(True)
-		self.combo_serial_port.setEnabled(False)
-		self.combo_serial_speed.setEnabled(False)
-		self.combo_endline_params.setEnabled(False)
-		self.textbox_send_command.setEnabled(True)
-		self.button_pause.setEnabled(True)
-		self.record_timer.start()
-		self.plot_frame.dataset = self.dataset
-		self.status_bar.showMessage("Connecting...")					# showing sth is happening. 
-		self.plot_frame.enable_toggles("all")
-		self.start_serial()
-		self.setup_slave()												# depending on the choosen mode, there are some requirements to start getting data.
-		self.on_button_play()
-		
-		self.first_toggles = 0
+	# def on_button_connect_click(self):									# this button changes text to disconnect when a connection is succesful.
+	# 	logging.debug("Connect Button Clicked")									# how to determine a connection was succesful ???
+	# 	self.button_serial_connect.setEnabled(False)
+	# 	self.button_serial_disconnect.setEnabled(True)
+	# 	self.combo_serial_port.setEnabled(False)
+	# 	self.combo_serial_speed.setEnabled(False)
+	# 	self.combo_endline_params.setEnabled(False)
+	# 	self.textbox_send_command.setEnabled(True)
+	# 	self.button_pause.setEnabled(True)
+	# 	self.record_timer.start()
+	# 	self.plot_frame.dataset = self.dataset
+	# 	self.status_bar.showMessage("Connecting...")					# showing sth is happening.
+	# 	self.plot_frame.enable_toggles("all")
+	# 	self.start_serial()
+	# 	self.setup_slave()												# depending on the choosen mode, there are some requirements to start getting data.
+	# 	self.on_button_play()
+	#
+	# 	self.first_toggles = 0
+	#
+
+	# def serial_connect(self, port_name):
+	# 	logging.debug("serial_connect method called")
+	# 	logging.debug(port_name)
+	# 	logging.debug("port name " + port_name)
+	#
+	# 	try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
+	# 		self.serial_port.close()
+	# 		logging.debug("Serial port closed")
+	# 		logging.debug("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
+	# 	except:
+	# 		logging.debug("serial port couldn't be closed")
+	# 		logging.debug("Wasn't open, as it should always be")
+	#
+	#
+	# 	try:															# try to establish serial connection
+	# 		self.serial_port = serial.Serial(							# serial constructor
+	# 			port=port_name,
+	# 			baudrate= self.serial_baudrate,
+	# 			#baudrate = 115200,
+	# 			#bytesize=EIGHTBITS,
+	# 			#parity=PARITY_NONE,
+	# 			#stopbits=STOPBITS_ONE,
+	# 			#timeout=None,
+	# 			timeout=0,												# whenever there's no dat on the buffer, returns inmediately (spits '\0')
+	# 			xonxoff=False,
+	# 			rtscts=False,
+	# 			write_timeout=None,
+	# 			dsrdtr=False,
+	# 			inter_byte_timeout=None,
+	# 			exclusive=None
+	# 			)
+	#
+	# 	except Exception as e:											# both port open, and somebody else blocking the port are IO errors.
+	# 		logging.debug("ERROR OPENING SERIAL PORT")
+	# 		self.on_port_error(e)
+	#
+	# 	except:
+	# 		logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
+	#
+	# 	else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
+	# 		logging.debug("SERIAL CONNECTION SUCCESFUL !")
+	# 		self.status_bar.showMessage("Connected")
+	# 		# here we should also add going  to the "DISCONNECT" state.
+	#
+	# 	logging.debug("serial_port.is_open:")
+	# 	logging.debug(self.serial_port.is_open)
+	# 	logging.debug("done: ")
+	# 	#logging.debug(self.done)
 
 
-	def serial_connect(self, port_name):
-		logging.debug("serial_connect method called")
-		logging.debug(port_name)
-		logging.debug("port name " + port_name)
+	# NOT BELONGING TO PLOTTER; BUT TO SERIAL PORT WIDGET #
+	# def start_serial(self):
+	# 	# first ensure connection is properly made
+	# 	self.serial_connect(self.serial_port_name)
+	# 	# 2. move status to connected
+	# 	# 3. start the timer to collect the data
+	# 	self.serial_timer.start()
+	# 	# 4. Initialization stuff required by the remote serial device:
+	# 	# self.init_emg_sensor()		# THIS DOESNT BELONG TO THE PLOTTER !!!
 
-		try:															# closing port just in case was already open. (SHOULDN'T BE !!!)
-			self.serial_port.close()
-			logging.debug("Serial port closed")	
-			logging.debug("IT SHOULD HAVE BEEN ALWAYS CLOSED, REVIEW CODE!!!")	# even though the port can't be closed, this message is shown. why ???
-		except:
-			logging.debug("serial port couldn't be closed")
-			logging.debug("Wasn't open, as it should always be")
+	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
+	# def init_emg_sensor(self):
+	# 	# initialization stuff (things required for the sensors to start sending shit)
+	# 	# message = "E=1;"														# enable EMG data.
+	# 	# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+	# 	# logging.debug(self.serial_message_to_send)
+	# 	# self.serial_port.write(self.serial_message_to_send)
+	# 	# message = "START;"
+	# 	# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+	# 	# logging.debug(self.serial_message_to_send)
+	# 	# self.serial_port.write(self.serial_message_to_send)
+	# 	pass
 
-
-		try:															# try to establish serial connection 
-			self.serial_port = serial.Serial(							# serial constructor
-				port=port_name, 
-				baudrate= self.serial_baudrate,		
-				#baudrate = 115200,
-				#bytesize=EIGHTBITS, 
-				#parity=PARITY_NONE, 
-				#stopbits=STOPBITS_ONE, 
-				#timeout=None, 
-				timeout=0,												# whenever there's no dat on the buffer, returns inmediately (spits '\0')
-				xonxoff=False, 
-				rtscts=False, 
-				write_timeout=None, 
-				dsrdtr=False, 
-				inter_byte_timeout=None, 
-				exclusive=None
-				)
-			
-		except Exception as e:											# both port open, and somebody else blocking the port are IO errors.
-			logging.debug("ERROR OPENING SERIAL PORT")
-			self.on_port_error(e)
-					
-		except:
-			logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
-
-		else:															# IN CASE THERE'S NO EXCEPTION (I HOPE)
-			logging.debug("SERIAL CONNECTION SUCCESFUL !")
-			self.status_bar.showMessage("Connected")
-			# here we should also add going  to the "DISCONNECT" state.
-			
-		logging.debug("serial_port.is_open:")
-		logging.debug(self.serial_port.is_open)
-		logging.debug("done: ")
-		#logging.debug(self.done)			
-
-	def start_serial(self):
-		# first ensure connection is properly made
-		self.serial_connect(self.serial_port_name)
-		# 2. move status to connected 
-		# 3. start the timer to collect the data
-		self.serial_timer.start()
-		# 4. Initialization stuff required by the remote serial device:
-		self.init_emg_sensor()
-
-	def init_emg_sensor(self):
-		# initialization stuff (things required for the sensors to start sending shit)
-		# message = "E=1;"														# enable EMG data.
-		# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
-		# logging.debug(self.serial_message_to_send)
-		# self.serial_port.write(self.serial_message_to_send)
-		# message = "START;"
-		# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
-		# logging.debug(self.serial_message_to_send)
-		# self.serial_port.write(self.serial_message_to_send)
-		pass
-
-	def on_button_disconnect_click(self):
-		print("Disconnect Button Clicked")
-		self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
-		self.button_serial_connect.setEnabled(True)
-		self.combo_serial_port.setEnabled(True)
-		self.combo_serial_speed.setEnabled(True)
-		self.combo_endline_params.setEnabled(True)
-		self.textbox_send_command.setEnabled(False)
-		self.status_bar.showMessage("Disconnected")						# showing sth is happening. 
-		self.plot_frame.clear_plot()									# clear plot
-		self.clear_dataset()
-		self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
-		print("self.plot_frame.dataset")
-		print(self.plot_frame.dataset)
-		self.plot_frame.clear_channels_labels()
-		self.plot_frame.check_toggles("none")
-		self.plot_frame.enable_toggles("none")
-		self.serial_port.close()
-		self.serial_timer.stop()
-		self.plot_frame.plot_timer.stop()
-		self.on_record_timer()											# this should save what's left to the file and clear the dataset
-		self.on_button_stop()											# and this should disable the recording, if we disconnect the serial port
-		self.record_timer.stop()
-		print(SEPARATOR)
+	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
+	# def on_button_disconnect_click(self):
+	# 	print("Disconnect Button Clicked")
+	# 	self.button_serial_disconnect.setEnabled(False)					# toggle the enable of the connect/disconnect buttons
+	# 	self.button_serial_connect.setEnabled(True)
+	# 	self.combo_serial_port.setEnabled(True)
+	# 	self.combo_serial_speed.setEnabled(True)
+	# 	self.combo_endline_params.setEnabled(True)
+	# 	self.textbox_send_command.setEnabled(False)
+	# 	self.status_bar.showMessage("Disconnected")						# showing sth is happening.
+	# 	self.plot_frame.clear_plot()									# clear plot
+	# 	self.clear_dataset()
+	# 	self.plot_frame.dataset = self.dataset  						# when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
+	# 	print("self.plot_frame.dataset")
+	# 	print(self.plot_frame.dataset)
+	# 	self.plot_frame.clear_channels_labels()
+	# 	self.plot_frame.check_toggles("none")
+	# 	self.plot_frame.enable_toggles("none")
+	# 	self.serial_port.close()
+	# 	self.serial_timer.stop()
+	# 	self.plot_frame.plot_timer.stop()
+	# 	self.on_record_timer()											# this should save what's left to the file and clear the dataset
+	# 	self.on_button_stop()											# and this should disable the recording, if we disconnect the serial port
+	# 	self.record_timer.stop()
+	# 	print(SEPARATOR)
 
 
 	def on_button_pause(self):
@@ -613,17 +613,17 @@ class MainWindow(QMainWindow):
 		# 	self.button_autoscale.setChecked(False)
 
 					
-	def on_port_select(self,port_name):									# callback when COM port is selected at the menu.
-		#1. get the selected port name via the text. 
-		#2. delete the old list, and regenerate it, so when we push again the com port list is updated.
-		#3. create a thread for whatever related with the serial communication, and start running it.
-		#. open a serial communication. --> this belongs to the thread. 
-		
-		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
-		#self.serial_connect(port_name)
-		logging.debug("Method on_port_select called	")
-		self.serial_port_name = port_name
-		logging.debug(self.serial_port_name)
+	# def on_port_select(self,port_name):									# callback when COM port is selected at the menu.
+	# 	#1. get the selected port name via the text.
+	# 	#2. delete the old list, and regenerate it, so when we push again the com port list is updated.
+	# 	#3. create a thread for whatever related with the serial communication, and start running it.
+	# 	#. open a serial communication. --> this belongs to the thread.
+	#
+	# 	# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
+	# 	#self.serial_connect(port_name)
+	# 	logging.debug("Method on_port_select called	")
+	# 	self.serial_port_name = port_name
+	# 	logging.debug(self.serial_port_name)
 
 	def on_arrow_up(self):
 		print("on_arrow_up method called")
@@ -712,107 +712,83 @@ class MainWindow(QMainWindow):
 			logging.debug("dataset_length after removing some points")
 			logging.debug(len(self.dataset))
 
-	def on_serial_timer(self):
-		if(self.parsing_style == "arduino"):
-			self.add_arduino_data()
-		elif(self.parsing_style == "emg"):
-			self.add_emg_sensor_data()
-		elif(self.parsing_style == "emg_new"):
-			self.add_emg_new_sensor_data()
+	def on_data_timer(self):
+		print("On_data_timer method called")
+		byte_buffer = self.serial_widget.byte_buffer			# THIS IS ACTUALLY READING; BUT IT SEEMS IT READS AN EMPTY BUFFER
 
-	def setup_slave(self):						# READ/WRITE CONFIG this method performs all the tasks required to write and request data to/from slave
-		print("setting up slave device")
-		# depending on the parsing style, we identify different remote devices and data formats #
-		if(self.parsing_style == "arduino"):	# just writes the ASCII formated data, usually associted with the TEENSY device, or for any other GENERIC device (compatible with Arduino plotter)
-			pass								# no configuration to be done here (at least for now)
-		elif(self.parsing_style == "emg"):
-			# #self.send_serial("N?")				# this command requests number of sensors in the remote device
-			# self.send_serial("E=1")			# ENABLES EMG data
-			# self.send_serial("START")			# STARTS COLLECTING EMG data
-			pass
-		elif(self.parsing_style == "emg_new"):
-			print("configuring the emg_new device")
-			print("reading the number of sensors")
-			self.send_serial("N?")
-			n_sensors = self.serial_port.readline()
-			print(n_sensors)
-			# for i in range(1,100):
-			# 	n_sensors = self.serial_port.read(500)
-			# 	print(n_sensors)
+		print("Byte Buffer: ", byte_buffer)
+
+		data = self.serial_widget.incoming_lines				# COPY BUFFER TO USE IT LATER ON
+		print(data)
+		self.serial_widget.incoming_lines = []					# CLEAN BUFFER OR WE EXPLODE THE THING
 
 
-			# UNCOMMENT THESE TWO LINES WHEN FINISHED DEBUGGING !!!#
-			self.send_serial("E=1")  # ENABLES EMG data
-			self.send_serial("START")  # STARTS COLLECTING EMG data
-			pass
+		self.add_arduino_data()
+
+
+
+
+	# IMPLEMENT IN A DIFFERENT WAY; USE PARSERS FILE !!!
+	# def setup_slave(self):						# READ/WRITE CONFIG this method performs all the tasks required to write and request data to/from slave
+	# 	print("setting up slave device")
+	# 	# depending on the parsing style, we identify different remote devices and data formats #
+	# 	if(self.parsing_style == "arduino"):	# just writes the ASCII formated data, usually associted with the TEENSY device, or for any other GENERIC device (compatible with Arduino plotter)
+	# 		pass								# no configuration to be done here (at least for now)
+	# 	elif(self.parsing_style == "emg"):
+	# 		# #self.send_serial("N?")				# this command requests number of sensors in the remote device
+	# 		# self.send_serial("E=1")			# ENABLES EMG data
+	# 		# self.send_serial("START")			# STARTS COLLECTING EMG data
+	# 		pass
+	# 	elif(self.parsing_style == "emg_new"):
+	# 		print("configuring the emg_new device")
+	# 		print("reading the number of sensors")
+	# 		self.send_serial("N?")
+	# 		n_sensors = self.serial_port.readline()
+	# 		print(n_sensors)
+	# 		# for i in range(1,100):
+	# 		# 	n_sensors = self.serial_port.read(500)
+	# 		# 	print(n_sensors)
+	#
+	#
+	# 		# UNCOMMENT THESE TWO LINES WHEN FINISHED DEBUGGING !!!#
+	# 		self.send_serial("E=1")  # ENABLES EMG data
+	# 		self.send_serial("START")  # STARTS COLLECTING EMG data
+	# 		pass
 
 		# read variable nSensors
 
 	def add_arduino_data(self):
 
+		print("add_arduino_data method called")
+
+
 		byte_buffer = ''
 		mid_buffer = ''
 
+		byte_buffer = self.serial_widget.byte_buffer					# !!! THIS MAY STEAL THE DATA FROM SOMEWHERE; MAYBE NEED INTERMEDIATE BUFFER!
+		print("Byte Buffer: ", byte_buffer)
+		self.serial_widget.incoming_lines = []
+		print(SEPARATOR)
+
 		try:
-			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
+			mid_buffer = byte_buffer.decode('utf-8')				# SHOULDN'T THIS BE PARSING ALREADY???
 		except Exception as e:
+			print(SEPARATOR)
+			# print(e)
 			self.on_port_error(e)
-			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
-		else:															# if except doens't happen
-			try:
-				mid_buffer = byte_buffer.decode('utf-8')				# SHOULDN'T THIS BE PARSING ALREADY???
-			except Exception as e:
-				print(SEPARATOR)
-				# print(e)
-				self.on_port_error(e)
-			else:
-				self.read_buffer = self.read_buffer + mid_buffer
-				data_points = self.read_buffer.split(self.endline)
-				self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
-				a = data_points[:-1]
-				for data_point in a:  # so all data points except last.
-					self.arduino_parse(data_point)
-
-	def arduino_parse(self,readed):									# perform data processing as required (START WITH ARDUINO STYLE, AND ADD OTHER STYLES).#
-
-		vals = readed.replace(' ',',')									# replace empty spaces for commas.
-		vals = vals.replace(':',',')				# fast fix for inline labels incompatibility. MAKE IT BETTER !!!
-		vals = vals.split(',')											# arduino serial plotter splits with both characters.
-
-		valsf = []
-
-		self.plot_frame.n_plots = 5
-
-		if(vals[0] == ''):
-			self.timeouts = self.timeouts + 1
-			print("Timeout")
-			print("Total number of timeouts: "+ str(self.timeouts))
 		else:
-			# for val in vals:
-			# 	try:
-			# 		valsf.append(float(val))
-			# 	except:
-			# 		logging.debug("It contains also text");
-			# 		# add to a captions vector
-			# 		text_vals = vals
-			# 		self.plot_frame.set_channels_labels(text_vals)		# this sets all labels, I need to set them independently !!!
-			# 	else:
-			# 		self.add_values_to_dataset(valsf)
-			text_vals = []
-			for val in vals:
-				try:
-					valsf.append(float(val))
-				except:
-					# logging.debug("It contains also text")
-					# add to a captions vector
-					text_vals.append(val)
-					self.plot_frame.set_channels_labels(text_vals)
-				else:
-					self.add_values_to_dataset(valsf)
+			self.read_buffer = self.read_buffer + mid_buffer
+			data_points = self.read_buffer.split(self.serial_widget.endline)
+			self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
+			a = data_points[:-1]
+			for data_point in a:  # so all data points except last.
+				self.arduino_parse(data_point)
 
-			self.plot_frame.update()
-			#print("dataset_changed = "+ str(self.plot_frame.graph.dataset_changed))
 
+
+	"""
+	HOW DOES IT COME ALL THESE METHODS DONT HAVE DOCUMENTATION ?
+	"""
 	def add_values_to_dataset(self,values):
 		# print("values =")
 		# print(values)
@@ -832,105 +808,6 @@ class MainWindow(QMainWindow):
 
 		self.first_toggles = self.first_toggles + 1				# ???
 
-	def add_emg_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
-
-		byte_buffer = []
-		num_buffer = []
-
-		try:
-			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
-		except Exception as e:
-			self.on_port_error(e)
-			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
-		else:															# if except doens't happen
-			# print("byte_buffer:")
-			# print(byte_buffer)
-
-			try:
-				for byte in byte_buffer:
-					num = int(byte)
-					num_buffer.append(num)
-					# print("num_buffer:")
-					# print(num_buffer)
-				# here we will have a buffer with lots of numbers (32,45,33,0,45,54,33,0,32...)
-			except Exception as e:
-				print("ERROR: -------------------------")
-				print(e)
-				print(SEPARATOR)
-				self.on_port_error(e)
-			else:
-				self.read_buffer = self.read_buffer + num_buffer			# read buffer contains what was left from previous iteration
-				data_points = self.split_number_array(self.read_buffer,0)	# we split the buffer on 'number 0' received (end of data_points)
-				self.read_buffer = data_points[-1]  						# clean the buffer, saving the non completed data_points
-				a = data_points[:-1]										# get all the completed ones
-				for data_point in a:  										# so all data points except last.
-					if len(data_point) == 4:								# FIX THIS!: we expect 4 data values per data point, if not, it means corrupted data.
-						self.add_values_to_dataset(data_point)
-
-				# HERE IS WHERE WE GET THE PROBLEMATIC DATA POINTS, SO THE RIGHT PLACE TO FIX IF THERE AREN'T ENOUGH POINTS.
-					else:
-						for i in range(int(len(data_point)/4)+1):
-							self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
-
-
-
-
-				pass
-		self.plot_frame.update()
-		# num = True
-		# vals = []
-		# while(num != 0):
-		# 	byte = self.serial_port.read()
-		# 	num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
-		# 	num = float(num)
-		# 	vals.append(num)
-		# vals = vals[:-1]										# remove the final zero
-		# if(len(vals) > 1):										# bad trick to remove zero data value array !!!
-		# 	self.add_values_to_dataset(vals)
-		# 	self.plot_frame.update()
-		# 	#return(vals)
-	def add_emg_new_sensor_data(self):								# reads the data in the specific binary format of the emg sensor
-		#print("add_emg_new_sensor_data")
-		byte_buffer = []
-		num_buffer = []
-
-		try:
-			byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)		# up to 1000 or as much as in buffer.
-		except Exception as e:
-			self.on_port_error(e)
-			self.on_button_disconnect_click()							# we've crashed the serial, so disconnect and REFRESH PORTS!!!
-		else:															# if except doens't happen
-			# print("byte_buffer:")
-			# print(byte_buffer)
-
-			try:
-				for byte in byte_buffer:
-					num = int(byte)
-					num_buffer.append(num)
-				# print("num_buffer:")
-				# print(num_buffer)
-				# here we will have a buffer with lots of numbers (32,45,33,0,45,54,33,0,32...)
-			except Exception as e:
-				print("ERROR: -------------------------")
-				print(e)
-				print(SEPARATOR)
-				self.on_port_error(e)
-			else:
-				self.read_buffer = self.read_buffer + num_buffer				# read buffer contains what was left from previous iteration
-				data_points = self.split_number_array(self.read_buffer,0xFF)	# we split the buffer on 'number FF' received (end of data_points)
-				self.read_buffer = data_points[-1]  							# clean the buffer, saving the non completed data_points
-				a = data_points[:-1]											# get all the completed ones
-				for data_point in a:  											# so all data points except last.
-					if len(data_point) == 4:									# FIX THIS!: we expect 4 data values per data point, if not, it means corrupted data.
-						self.add_values_to_dataset(data_point)
-						pass
-				# HERE IS WHERE WE GET THE PROBLEMATIC DATA POINTS, SO THE RIGHT PLACE TO FIX IF THERE AREN'T ENOUGH POINTS.
-					else:
-						for i in range(int(len(data_point)/4)+1):
-							self.add_values_to_dataset([0,0,0,0])				# this indicates error code, data isn't having the 4 expected values
-
-		self.plot_frame.update()
-
 	def split_number_array(self, array, separator):
 		results = []
 		res = []
@@ -946,8 +823,6 @@ class MainWindow(QMainWindow):
 
 		return(results)
 
-	def emg_parse(self):
-		pass
 
 		#num = int.from_bytes(byte, byteorder='big', signed=False)  # decoding to store in file
 
@@ -1195,4 +1070,4 @@ if __name__ == '__main__':
 	app = QApplication(sys.argv)
 	app.setStyle("Fusion")													# required to use it here
 	mw = MainWindow()
-	app.exec_()
+	app.exec()
