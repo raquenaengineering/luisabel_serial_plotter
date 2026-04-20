@@ -117,6 +117,7 @@ class MainWindow(QMainWindow):
 	recording = False													# flag to start/stop recording.
 	first_toggles = 0													# used to check the toggles which contain data on start graphing.
 	n_data_points = POINTS_PER_PLOT										# defaults to the POINTS_PER_PLOT value
+	parser = parsers.parsers()											# create a parser to use it later on
 
 	# constructor # 
 	def __init__(self):
@@ -156,9 +157,6 @@ class MainWindow(QMainWindow):
 		menu = self.menuBar()											# by default, the window already has an instance/object menubar
 		# file #
 		self.file_menu = menu.addMenu("&File")
-		self.serial_port_menu = self.file_menu.addMenu("Serial Port")
-		self.refresh_menu = self.file_menu.addAction("Refresh")
-		self.refresh_menu.triggered.connect(self.update_serial_ports)
 		# Preferences #
 		self.preferences_menu = menu.addMenu("&Preferences")
 		# theme #
@@ -314,25 +312,15 @@ class MainWindow(QMainWindow):
 	
 	# other methods #
 
-	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
-	# def init_emg_sensor(self):
-	# 	# initialization stuff (things required for the sensors to start sending shit)
-	# 	# message = "E=1;"														# enable EMG data.
-	# 	# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
-	# 	# logging.debug(self.serial_message_to_send)
-	# 	# self.serial_port.write(self.serial_message_to_send)
-	# 	# message = "START;"
-	# 	# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
-	# 	# logging.debug(self.serial_message_to_send)
-	# 	# self.serial_port.write(self.serial_message_to_send)
-	# 	pass
-
-
 	# Buttons for pausing the graph and recording data #
 
 	def on_button_pause(self):
-		# pause the plot:
-		# so stop the update timer. #
+		"""
+		Pauses the plot
+		so stops the update timer
+		Also updates buttons enabled correspondingly
+		:return:
+		"""
 		print("on_button_pause method: ")
 		#self.plot_frame.plot_timer.stop()								# but we won't be able to rearm...
 		self.plot_frame.stop_plotting()
@@ -340,8 +328,12 @@ class MainWindow(QMainWindow):
 		self.button_play.setEnabled(True)
 		
 	def on_button_play(self):
-		# pause the plot:
-		# so stop the update timer. #
+		"""
+		Starts running the plot again
+		so starts the timer
+		And also updates buttons enabled correspondingly
+		:return:
+		"""
 		print("on_button_play method: ")
 		self.button_play.setEnabled(False)
 		self.button_pause.setEnabled(True)
@@ -487,7 +479,8 @@ class MainWindow(QMainWindow):
 		("On_data_timer method called")
 		byte_buffer = self.serial_widget.byte_buffer							# THIS IS ACTUALLY READING; BUT IT SEEMS IT READS AN EMPTY BUFFER
 
-		new_data_points = parsers.arduino_parser(byte_buffer)
+		new_data_points = self.parser.arduino_parser(byte_buffer)
+		print("new_data_points: ")
 		print(new_data_points)
 
 		print("Byte Buffer: ", byte_buffer)
@@ -750,38 +743,6 @@ class MainWindow(QMainWindow):
 			self.n_data_points = int(i)
 			self.plot_frame.set_max_points(self.n_data_points)
 
-	def update_serial_ports(self):										# we update the list every time we go over the list of serial ports.
-		# here we need to add an entry for each serial port avaiable at the computer
-		# 1. How to get the list of available serial ports ?
-		
-		self.serial_port_menu.clear()									# deletes all old actions on serial port menu	
-		self.combo_serial_port.clear()
-	
-		
-		self.get_serial_ports()											# meeded to list the serial ports at the menu
-		# 3. How to ensure which serial ports are available ? (grey out the unusable ones)
-		# 4. How to display properly each available serial port at the menu ?
-		logging.debug (self.serial_ports)
-		if self.serial_ports != []:
-			for port in self.serial_ports:
-				port_name = port[0]
-				logging.debug(port_name)
-				b = self.serial_port_menu.addAction(port_name)
-				# WE WON'T TRIGGER THE CONNECTION FROM THE BUTTON PUSH ANYMORE. 
-				b.triggered.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))				# just need to add somehow the serial port name here, and we're done.
-
-				# here we need to add the connect method to the action click, and its result
-				
-			for port in self.serial_ports:								# same as adding all ports to action menu, but now using combo box. 
-				port_name = port[0]	
-				item = self.combo_serial_port.addItem(port_name)		# add new items 
-				
-				#b.currentTextChanged.connect((lambda serial_connect, port_name=port_name: self.on_port_select(port_name)))
-		
-		else:
-				self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
-				self.noserials.setDisabled(True)
-
 	def shortcut_preferences(self):
 		self.shortcuts = ShortcutsWidget()							# needs to be self, or it won't persist
 		#0. should be done on init(): Load the shortcuts from a file where they're stored ¿in json format?
@@ -837,6 +798,18 @@ class MainWindow(QMainWindow):
 			elif event.text() == '0':									# toggles plots all/none
 				self.plot_frame.check_toggles("none")
 
+	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
+	# def init_emg_sensor(self):
+	# 	# initialization stuff (things required for the sensors to start sending shit)
+	# 	# message = "E=1;"														# enable EMG data.
+	# 	# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+	# 	# logging.debug(self.serial_message_to_send)
+	# 	# self.serial_port.write(self.serial_message_to_send)
+	# 	# message = "START;"
+	# 	# self.serial_message_to_send = message.encode('utf-8')					# this should have effect on the serial_thread
+	# 	# logging.debug(self.serial_message_to_send)
+	# 	# self.serial_port.write(self.serial_message_to_send)
+	# 	pass
 
 										
 if __name__ == '__main__':
@@ -845,3 +818,6 @@ if __name__ == '__main__':
 	app.setStyle("Fusion")													# required to use it here
 	mw = MainWindow()
 	app.exec()
+
+
+
