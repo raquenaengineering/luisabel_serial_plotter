@@ -355,10 +355,12 @@ if __name__ == "__main__":
 											"caca"])
 
 			self.plot.start_plotting()
-			
-			self.data_timer = QTimer()
-			self.data_timer.timeout.connect(self.on_data_timer)
-			self.data_timer.start(self.data_tick_ms)
+
+			# instead of using a timer to get the data,
+			# use a signal from terminal_widget that triggers the collecting of the data.
+			# self.data_timer = QTimer()
+			# self.data_timer.timeout.connect(self.on_data_timer)
+			# self.data_timer.start(self.data_tick_ms)
 
 			self.plot.check_toggles("none")								# by default all toggles are on, making all graphs active.
 			self.plot.enable_toggles("all")								# enables the toggles which control the graphs, so they can be enabled and disabled from the toggle.
@@ -371,30 +373,31 @@ if __name__ == "__main__":
 			
 			#self.plot.graph.plot_timer.start()
 
-		def on_data_timer(self):										# simulate data coming from external source at regular rate.
-			t0 = time.time()
-			logging.debug("length of dataset: " + str(len(self.plot.dataset)))
-			
-			
-			line = []
-			for i in range(0,self.n_plots):
-					line.append(random.randrange(0,100))
-					self.dataset.append(line)
-					# line.append(random.randrange(0, 80))
-					# self.dataset.append(line)
-					# line.append(random.randrange(0, 120))
-					# self.dataset.append(line)
-
-			# print("self.dataset")
-			# for data in self.dataset:
-			# 	print(data)
-			
-			self.plot.dataset = self.dataset							# this SHOULD HAPPEN INTERNAL TO THE CLASS !!!
-					
-			self.plot.update()
-			t = time.time()
-			dt = t - t0
-			logging.debug("execution time add_stuff_dataset " + str(dt))
+		# unneeded with new approach #
+		# def on_data_timer(self):										# simulate data coming from external source at regular rate.
+		# 	t0 = time.time()
+		# 	logging.debug("length of dataset: " + str(len(self.plot.dataset)))
+		#
+		#
+		# 	line = []
+		# 	for i in range(0,self.n_plots):
+		# 			line.append(random.randrange(0,100))
+		# 			self.dataset.append(line)
+		# 			# line.append(random.randrange(0, 80))
+		# 			# self.dataset.append(line)
+		# 			# line.append(random.randrange(0, 120))
+		# 			# self.dataset.append(line)
+		#
+		# 	# print("self.dataset")
+		# 	# for data in self.dataset:
+		# 	# 	print(data)
+		#
+		# 	self.plot.dataset = self.dataset							# this SHOULD HAPPEN INTERNAL TO THE CLASS !!!
+		#
+		# 	self.plot.update()
+		# 	t = time.time()
+		# 	dt = t - t0
+		# 	logging.debug("execution time add_stuff_dataset " + str(dt))
 			
 
 	app = QApplication([])
