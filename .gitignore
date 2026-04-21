@@ -3,6 +3,7 @@
 /logs
 /re_pyqt_widgets
 /pyqt_common_resources
+incoming_data.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

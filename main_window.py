@@ -778,11 +778,11 @@ class MainWindow(QMainWindow):
 			elif event.text() == 'f':
 				self.full_screen()
 			elif event.text() == 'c':
-				self.on_button_connect_click()
+				self.serial_widget.on_button_connect_click()
 			elif event.text() == 'd':
-				self.on_button_disconnect_click()
+				self.serial_widget.on_button_disconnect_click()
 			elif event.text() == 'u':
-				self.update_serial_ports()
+				self.serial_widget.update_serial_ports()
 			elif event.text() == 'p':
 				self.on_button_pause()
 			elif event.text() == 'y':
