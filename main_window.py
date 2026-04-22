@@ -128,9 +128,9 @@ class MainWindow(QMainWindow):
 
 
 		# data input timer, every fixed time checks for new data #
-		self.data_timer = QTimer()										# we'll use timer instead of thread
-		self.data_timer.timeout.connect(self.on_data_timer)				# connect with callback
-		self.data_timer.start(self.PERIOD_DATA_TIMER)					# period needs to be relatively short
+		# self.data_timer = QTimer()										# we'll use timer instead of thread
+		# self.data_timer.timeout.connect(self.on_data_timer)				# connect with callback
+		# self.data_timer.start(self.PERIOD_DATA_TIMER)					# period needs to be relatively short
 		# self.data_timer.stop()										# by default the timer will be off, enabled by connect.
 
 
@@ -226,7 +226,7 @@ class MainWindow(QMainWindow):
 		self.button_pause = QPushButton("Pause")
 		self.button_pause.setIcon(QIcon('resources/player_icons/141.png'))
 		self.button_pause.clicked.connect(self.on_button_pause)
-		self.button_pause.setEnabled(False)
+		self.button_pause.setEnabled(True)
 		self.layout_player.addWidget(self.button_pause)
 		# record button # 
 		self.button_record = QPushButton("Record")
@@ -251,6 +251,7 @@ class MainWindow(QMainWindow):
 
 		# SERIAL WIDGET #
 		self.serial_widget = serial_widget()
+		self.serial_widget.new_lines.connect(self.on_serial_lines)
 		self.layoutV1.addWidget(self.serial_widget)
 
 		####################################################################
@@ -468,89 +469,53 @@ class MainWindow(QMainWindow):
 			logging.debug("dataset_length after removing some points")
 			logging.debug(len(self.dataset))
 
+	def on_serial_lines(self, lines):
+		labels_changed = False
+
+		for line in lines:
+			labels, values = self.parser.arduino_parser((line + "\n").encode("utf-8"))
+
+			if labels:
+				self.plot_frame.set_channels_labels(labels)
+				labels_changed = True
+
+			if values:
+				rows = list(map(list, zip(*values)))
+				for row in rows:
+					self.add_values_to_dataset(row)
+
+		if labels_changed or lines:
+			self.plot_frame.dataset = self.dataset
+			self.plot_frame.update()
 
 
-	def on_data_timer(self):
-		"""
-
-		:return:
-		"""
-
-		("On_data_timer method called")
-		byte_buffer = self.serial_widget.byte_buffer							# THIS IS ACTUALLY READING; BUT IT SEEMS IT READS AN EMPTY BUFFER
-
-		new_data_points = self.parser.arduino_parser(byte_buffer)
-		print("new_data_points: ")
-		print(new_data_points)
-
-		print("Byte Buffer: ", byte_buffer)
-
-		data = self.serial_widget.incoming_lines								# COPY BUFFER TO USE IT LATER ON
-		print(data)
-		self.serial_widget.incoming_lines = []									# CLEAN BUFFER OR WE EXPLODE THE THING
-
-
-		self.add_arduino_data()
-
-
-
-
-	# IMPLEMENT IN A DIFFERENT WAY; USE PARSERS FILE !!!
-	# def setup_slave(self):						# READ/WRITE CONFIG this method performs all the tasks required to write and request data to/from slave
-	# 	print("setting up slave device")
-	# 	# depending on the parsing style, we identify different remote devices and data formats #
-	# 	if(self.parsing_style == "arduino"):	# just writes the ASCII formated data, usually associted with the TEENSY device, or for any other GENERIC device (compatible with Arduino plotter)
-	# 		pass								# no configuration to be done here (at least for now)
-	# 	elif(self.parsing_style == "emg"):
-	# 		# #self.send_serial("N?")				# this command requests number of sensors in the remote device
-	# 		# self.send_serial("E=1")			# ENABLES EMG data
-	# 		# self.send_serial("START")			# STARTS COLLECTING EMG data
-	# 		pass
-	# 	elif(self.parsing_style == "emg_new"):
-	# 		print("configuring the emg_new device")
-	# 		print("reading the number of sensors")
-	# 		self.send_serial("N?")
-	# 		n_sensors = self.serial_port.readline()
-	# 		print(n_sensors)
-	# 		# for i in range(1,100):
-	# 		# 	n_sensors = self.serial_port.read(500)
-	# 		# 	print(n_sensors)
+	# def add_arduino_data(self):
+	#
+	# 	print("add_arduino_data method called")
 	#
 	#
-	# 		# UNCOMMENT THESE TWO LINES WHEN FINISHED DEBUGGING !!!#
-	# 		self.send_serial("E=1")  # ENABLES EMG data
-	# 		self.send_serial("START")  # STARTS COLLECTING EMG data
-	# 		pass
-
-		# read variable nSensors
-
-	def add_arduino_data(self):
-
-		print("add_arduino_data method called")
-
-
-		byte_buffer = ''
-		mid_buffer = ''
-
-		byte_buffer = self.serial_widget.byte_buffer					# !!! THIS MAY STEAL THE DATA FROM SOMEWHERE; MAYBE NEED INTERMEDIATE BUFFER!
-		print("Byte Buffer: ", byte_buffer)
-		self.serial_widget.incoming_lines = []
-		print(SEPARATOR)
-
-		try:
-			mid_buffer = byte_buffer.decode('utf-8')				# SHOULDN'T THIS BE PARSING ALREADY???
-		except Exception as e:
-			print(SEPARATOR)
-			# print(e)
-			self.on_port_error(e)
-		else:
-			self.read_buffer = self.read_buffer + mid_buffer
-			data_points = self.read_buffer.split(str(self.serial_widget.endline))
-			self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
-			a = data_points[:-1]
-			for data_point in a:  # so all data points except last.
-				self.arduino_parse(data_point)
-
+	# 	byte_buffer = ''
+	# 	mid_buffer = ''
+	#
+	# 	byte_buffer = self.serial_widget.byte_buffer					# !!! THIS MAY STEAL THE DATA FROM SOMEWHERE; MAYBE NEED INTERMEDIATE BUFFER!
+	# 	print("Byte Buffer: ", byte_buffer)
+	# 	self.serial_widget.incoming_lines = []
+	# 	print(SEPARATOR)
+	#
+	# 	try:
+	# 		mid_buffer = byte_buffer.decode('utf-8')				# SHOULDN'T THIS BE PARSING ALREADY???
+	# 	except Exception as e:
+	# 		print(SEPARATOR)
+	# 		# print(e)
+	# 		self.on_port_error(e)
+	# 	else:
+	# 		self.read_buffer = self.read_buffer + mid_buffer
+	# 		data_points = self.read_buffer.split(str(self.serial_widget.endline))
+	# 		self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
+	# 		a = data_points[:-1]
+	# 		for data_point in a:  # so all data points except last.
+	# 			self.arduino_parse(data_point)
+	#
 
 
 	"""

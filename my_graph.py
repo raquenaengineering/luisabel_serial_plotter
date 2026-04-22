@@ -183,7 +183,7 @@ class MyPlot(QWidget):
 		self.plot_timer = QTimer()										# used to update the plot
 		self.plot_timer.timeout.connect(self.on_plot_timer)				# updates the plot in a regular basis
 		self.start_plotting(self.plot_tick_ms)
-		self.stop_plotting()	
+		# self.stop_plotting()
 
 		self.graph.set_enabled_graphs("none")							# writes to a variable of graph indicating which graphs are on
 		
