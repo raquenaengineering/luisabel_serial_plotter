@@ -1,6 +1,6 @@
-numpy
+numpy >= 1.22
 PySide6
 pyqtgraph
 qtwidgets
 pyserial
-future
+future >= 0.18.3
