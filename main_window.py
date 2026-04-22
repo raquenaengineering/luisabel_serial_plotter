@@ -24,6 +24,7 @@ from pyqt_common_resources import pyqt_custom_palettes				# moved to an independ
 from my_graph import MyPlot
 import my_graph														# for the global variables of the namespace.
 from re_pyqt_widgets.shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
+from re_pyqt_widgets.socket_widget import socket_widget
 from re_pyqt_widgets.serial_widget import serial_widget				# all serial is now handled by this widget
 from range_dialog import RangeDialog
 
@@ -250,9 +251,11 @@ class MainWindow(QMainWindow):
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
 
 		# SERIAL WIDGET #
-		self.serial_widget = serial_widget()
-		self.serial_widget.new_lines.connect(self.on_serial_lines)
-		self.layoutV1.addWidget(self.serial_widget)
+		# self.serial_widget = serial_widget()
+		# self.serial_widget.new_lines.connect(self.on_serial_lines)
+		self.terminal_widget = socket_widget()
+		self.terminal_widget.new_lines.connect(self.on_serial_lines)
+		self.layoutV1.addWidget(self.terminal_widget)
 
 		####################################################################
 
@@ -743,11 +746,11 @@ class MainWindow(QMainWindow):
 			elif event.text() == 'f':
 				self.full_screen()
 			elif event.text() == 'c':
-				self.serial_widget.on_button_connect_click()
+				self.terminal_widget.on_button_connect_click()
 			elif event.text() == 'd':
-				self.serial_widget.on_button_disconnect_click()
+				self.terminal_widget.on_button_disconnect_click()
 			elif event.text() == 'u':
-				self.serial_widget.update_serial_ports()
+				self.terminal_widget.update_serial_ports()
 			elif event.text() == 'p':
 				self.on_button_pause()
 			elif event.text() == 'y':
