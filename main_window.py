@@ -251,10 +251,9 @@ class MainWindow(QMainWindow):
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
 
 		# SERIAL WIDGET #
-		# self.serial_widget = serial_widget()
-		# self.serial_widget.new_lines.connect(self.on_serial_lines)
-		self.terminal_widget = socket_widget()
-		self.terminal_widget.new_lines.connect(self.on_serial_lines)
+		self.terminal_widget = serial_widget()
+		# self.terminal_widget = socket_widget()
+		self.terminal_widget.new_lines.connect(self.on_data_lines)
 		self.layoutV1.addWidget(self.terminal_widget)
 
 		####################################################################
@@ -269,19 +268,20 @@ class MainWindow(QMainWindow):
 		# show and done #		
 		self.show()
 
-	# # on close #
-	#
-	# def closeEvent(self, event):
-	#
-	# 	print("CLOSING AND CLEANING UP:")
-	# 	try:
-	# 		print("Closing serial port")
-	# 		self.serial_port.close()										# need to explicitly close the serial port to release it
-	# 	except:
-	# 		print("Couldn't close serial port, probably already closed / never open")
-	# 	super().close()
-	# 	#event.ignore()													# extremely useful to ignore the close event !
-	#
+	# on close #
+
+	def closeEvent(self, event):
+
+		print("CLOSING AND CLEANING UP:")
+		try:
+			self.terminal_widget.closeEvent()		# UNIMPLEMENTED --> SEND TO THE WIDGETS TO DEALY WITH IT.
+		except:
+			# print("Couldn't close serial port, probably already closed / never open")
+			pass
+		super().close()
+		#event.ignore()													# extremely useful to ignore the close event !
+
+
 	# actions #		
 	
 	def set_logfile(self):	
@@ -472,7 +472,7 @@ class MainWindow(QMainWindow):
 			logging.debug("dataset_length after removing some points")
 			logging.debug(len(self.dataset))
 
-	def on_serial_lines(self, lines):
+	def on_data_lines(self, lines):
 		labels_changed = False
 
 		for line in lines:
@@ -490,36 +490,6 @@ class MainWindow(QMainWindow):
 		if labels_changed or lines:
 			self.plot_frame.dataset = self.dataset
 			self.plot_frame.update()
-
-
-	# def add_arduino_data(self):
-	#
-	# 	print("add_arduino_data method called")
-	#
-	#
-	# 	byte_buffer = ''
-	# 	mid_buffer = ''
-	#
-	# 	byte_buffer = self.serial_widget.byte_buffer					# !!! THIS MAY STEAL THE DATA FROM SOMEWHERE; MAYBE NEED INTERMEDIATE BUFFER!
-	# 	print("Byte Buffer: ", byte_buffer)
-	# 	self.serial_widget.incoming_lines = []
-	# 	print(SEPARATOR)
-	#
-	# 	try:
-	# 		mid_buffer = byte_buffer.decode('utf-8')				# SHOULDN'T THIS BE PARSING ALREADY???
-	# 	except Exception as e:
-	# 		print(SEPARATOR)
-	# 		# print(e)
-	# 		self.on_port_error(e)
-	# 	else:
-	# 		self.read_buffer = self.read_buffer + mid_buffer
-	# 		data_points = self.read_buffer.split(str(self.serial_widget.endline))
-	# 		self.read_buffer = data_points[-1]  # clean the buffer, saving the non completed data_points
-	# 		a = data_points[:-1]
-	# 		for data_point in a:  # so all data points except last.
-	# 			self.arduino_parse(data_point)
-	#
-
 
 	"""
 	HOW DOES IT COME ALL THESE METHODS DONT HAVE DOCUMENTATION ?
