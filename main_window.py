@@ -251,8 +251,8 @@ class MainWindow(QMainWindow):
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
 
 		# SERIAL WIDGET #
-		# self.terminal_widget = serial_widget()
-		self.terminal_widget = socket_widget()
+		self.terminal_widget = serial_widget()
+		# self.terminal_widget = socket_widget()
 		self.terminal_widget.new_lines.connect(self.on_data_lines)
 		self.layoutV1.addWidget(self.terminal_widget)
 
@@ -729,7 +729,9 @@ class MainWindow(QMainWindow):
 				self.on_button_record()	
 			elif event.text() == 's':
 				self.on_button_autoscale()
-			# numbers # 
+			elif event.text() == 'l':
+				self.terminal_widget.check_log.toggle()
+			# numbers #
 			elif event.text() == 'º':
 				print("enable all")
 				self.plot_frame.check_toggles("all")					# this can't be done 
