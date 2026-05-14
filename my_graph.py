@@ -198,8 +198,9 @@ class MyPlot(QWidget):
 						
 	def add_toggles(self):												# encapsulates the creation of the toggles, and their initial setup.
 		for i in range(0, MAX_PLOTS):
-			color = "#"+COLORS[i]										# !!! TAKE A LOOK TO THE #
+			color = COLORS[i]
 			label_toggle = LabelledAnimatedToggle(color = color)
+			# label_toggle.setStyle()
 			self.toggles.append(label_toggle)
 			label_toggle.setChecked(False)						# all toggles not checked by default	# create new method to call the toggle method?
 			label_toggle.setEnabled(True)						# all toggles not enabled by default

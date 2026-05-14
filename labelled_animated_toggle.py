@@ -17,10 +17,11 @@ import pyqtgraph as pg
 
 class LabelledAnimatedToggle(QWidget):
 	
-	def __init__(self,color = "#aaffaa", label_text = ""):				# optional parameters instead ??? yes, thanks.
+	def __init__(self,color = "#ffffff", label_text = ""):				# optional parameters instead ??? yes, thanks.
 		super().__init__()
 		self.label = QLabel(label_text)
 		# self.toggle = qtwidgets.AnimatedToggle(checked_color = color)
+		self.label.setStyleSheet(f"color: {color};")
 		self.toggle = 	QCheckBox()
 		
 		self.layout = QHBoxLayout()

@@ -251,8 +251,8 @@ class MainWindow(QMainWindow):
 		# ~ self.layout_player.addWidget(self.autoscale_toggle)
 
 		# SERIAL WIDGET #
-		self.terminal_widget = serial_widget()
-		# self.terminal_widget = socket_widget()
+		# self.terminal_widget = serial_widget()
+		self.terminal_widget = socket_widget()
 		self.terminal_widget.new_lines.connect(self.on_data_lines)
 		self.layoutV1.addWidget(self.terminal_widget)
 
