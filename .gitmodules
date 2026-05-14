@@ -1,0 +1,7 @@
+[submodule "src/luisabel_serial_plotter/re_pyqt_widgets"]
+	path = src/luisabel_serial_plotter/re_pyqt_widgets
+	url = https://github.com/raquenaengineering/re_pyqt_widgets
+
+[submodule "src/luisabel_serial_plotter/pyqt_common_resources"]
+	path = src/luisabel_serial_plotter/pyqt_common_resources
+	url = https://github.com/raquenaengineering/pyqt_common_resources.git
