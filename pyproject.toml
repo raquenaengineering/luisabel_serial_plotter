@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luisabel_serial_plotter"
+version = "0.1.0"
+authors = [
+    {name = "Raul Quesada", email = "raquenaengineering@gmail.com"},
+]
+description = "A package for serial plotting"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/raquenaengineering/luisabel_serial_plotter"
