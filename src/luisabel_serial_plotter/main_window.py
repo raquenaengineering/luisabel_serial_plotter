@@ -160,6 +160,12 @@ class MainWindow(QMainWindow):
 		self.file_menu = menu.addMenu("&File")
 		# Preferences #
 		self.preferences_menu = menu.addMenu("&Preferences")
+		# Communication #
+		self.parsing_submenu = self.preferences_menu.addMenu("Communication")
+		self.arduino_parsing_option = self.parsing_submenu.addAction("Serial")
+		self.arduino_parsing_option.triggered.connect(self.set_serial_widget)
+		self.emg_parsing_option = self.parsing_submenu.addAction("Socket")
+		self.emg_parsing_option.triggered.connect(self.set_socket_widget)
 		# theme #
 		self.theme_submenu = self.preferences_menu.addMenu("Theme")
 		self.dark_theme_option = self.theme_submenu.addAction("Dark")
@@ -638,6 +644,52 @@ class MainWindow(QMainWindow):
 		self.handle_errors_flag = False				
 		self.error_type = None											# cleaning unhnandled errors flags. 
 
+
+	def set_serial_widget(self):
+		print("Setting serial widget for communication")
+		self.set_terminal_widget(serial_widget)
+
+	def set_socket_widget(self):
+		print("Setting socket widget for communication")
+		self.set_terminal_widget(socket_widget)
+
+
+	def set_terminal_widget(self, widget_class):
+		"""
+		It is possible to change between serial and socket widget in execution time.
+		This method is in charge of dealing with all actions required to do so
+		widget_class: Either serial or socket
+		"""
+
+		if isinstance(self.terminal_widget, widget_class):			# if comm type not changed, do nothing.
+			return
+
+		# disabling old widget and saving state data #
+		old_widget = self.terminal_widget							# keeps the old widget
+		log_window_enabled = old_widget.check_log.isChecked()		# saves state of log checkbox, to keep it after widget change.
+
+		try:
+			old_widget.new_lines.disconnect(self.on_data_lines)		# disconnect old signal of incoming data lines
+		except:
+			pass
+
+		try:
+			if old_widget.button_disconnect.isEnabled():			# in case there is an open communication (connected)
+				old_widget.on_button_disconnect_click()				# close the open connection
+		except:
+			pass
+
+		# safely removing the old widget #
+		self.layoutV1.removeWidget(old_widget)						# remove from layout
+		old_widget.setParent(None)									# take out of the qt tree
+		old_widget.deleteLater()									# marked to be deleted by pyqt
+
+		# creating the new widget and attaching its signals #
+		self.terminal_widget = widget_class(log_window=log_window_enabled)
+		self.terminal_widget.new_lines.connect(self.on_data_lines)
+		self.layoutV1.addWidget(self.terminal_widget)
+		self.status_bar.showMessage("Not Connected")
+
 	# check all themes and use lambda functions may be an option to use more themes #
 	def set_dark_theme(self):
 		self.palette = pyqt_custom_palettes.dark_palette()
@@ -732,11 +784,33 @@ class MainWindow(QMainWindow):
 			elif event.text() == 'l':
 				self.terminal_widget.check_log.toggle()
 			# numbers #
-			elif event.text() == 'º':
+			elif event.text() == '>':
 				print("enable all")
 				self.plot_frame.check_toggles("all")					# this can't be done 
-			elif event.text() == '0':									# toggles plots all/none
+			elif event.text() == '<':									# toggles plots all/none
 				self.plot_frame.check_toggles("none")
+
+			# plot channel toggles #
+			elif event.key() >= Qt.Key_1 and event.key() <= Qt.Key_9:
+				toggle_index = event.key() - Qt.Key_1
+				if toggle_index < len(self.plot_frame.toggles):
+					toggle = self.plot_frame.toggles[toggle_index]
+					if toggle.isEnabled():
+						toggle.toggle.toggle()							# review syntax in labelled_animated_toggle !!!
+
+			elif event.key() == Qt.Key_0:
+				toggle_index = 9
+				if toggle_index < len(self.plot_frame.toggles):
+					toggle = self.plot_frame.toggles[toggle_index]
+					if toggle.isEnabled():
+						toggle.toggle.toggle()
+			# ctrl + #
+			# communication shortcuts #
+			if event.key() == Qt.Key_K and event.modifiers() & Qt.ControlModifier:
+				self.set_socket_widget()
+
+			elif event.key() == Qt.Key_L and event.modifiers() & Qt.ControlModifier:
+				self.set_serial_widget()
 
 	# THIS DOESNT BELONG TO THE PLOTTER ################## !!!
 	# def init_emg_sensor(self):
