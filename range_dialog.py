@@ -6,7 +6,7 @@ import numpy as np
 
 import csv
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
 	QApplication,
 	QMainWindow,
 	QWidget,
@@ -21,13 +21,13 @@ from PyQt5.QtWidgets import (
 	QFormLayout,
 )
 
-from PyQt5.QtCore import (
+from PySide6.QtCore import (
 	QTimer,
 	Qt,
-	pyqtSignal,
+	Signal,
 )
 
-from PyQt5.QtGui import (
+from PySide6.QtGui import (
 	QIntValidator,
 )
 
@@ -71,9 +71,9 @@ class RangeDialogOldOld(QDialog):  # this is supposed to be the python conventio
 	max = None				# parameters to be returned
 	min = None
 	# signals #
-	range = pyqtSignal(int, int)					# This signal will be used to send the range chosen in the popup window.
-	okPressed = pyqtSignal()
-	cancelPressed = pyqtSignal()
+	range = Signal(int, int)					# This signal will be used to send the range chosen in the popup window.
+	okPressed = Signal()
+	cancelPressed = Signal()
 
 
 	def __init__(self):

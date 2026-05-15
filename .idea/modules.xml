@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/PYCHARM.iml" filepath="$PROJECT_DIR$/.idea/PYCHARM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/luisabel_serial_plotter.iml" filepath="$PROJECT_DIR$/.idea/luisabel_serial_plotter.iml" />
     </modules>
   </component>
 </project>
