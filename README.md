@@ -7,17 +7,11 @@ Here a little Demo:
 
 ## Dependencies
 
-+ Python 3.9(!)
-+ Pyserial:
-  pip install pyserial
-+ PyQt5:
-  pip install PyQt5
-+ numpy:
-  pip install numpy
-+ pyqtgraph:
-  pip install pyqtgraph
-+ Qt Widgets:
-  pip install qtwidgets
++ Python 3.14
++ Pyserial
++ PySide6
++ numpy
++ pyqtgraph
 + To simplify (in the project folder):
   pip install -r requirements.txt
 + submodules:
@@ -27,11 +21,11 @@ Here a little Demo:
 
 + Qt Development team:
   Is such a great tool!
-+ Developers who ported QT5 to python :
++ Developers who ported QT to python :
   Even better when it's so easy to develop!
 + [PyqtGraph Developers](https://github.com/pyqtgraph/pyqtgraph):
   This tool wouldn't have been possible without his fantastic pyqtgraph library.
 + [Martin Fitzpatrick](https://github.com/mfitzp):
-  For writing qtwidgets, and also for his book about PyQt5.
+  For writing qtwidgets, and also for his book about PyQt.
 + [Yusuke Kamiyamane](https://p.yusukekamiyamane.com/):
   For the icons.
