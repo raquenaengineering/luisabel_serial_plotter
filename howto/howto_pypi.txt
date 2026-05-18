@@ -1,0 +1,10 @@
+
+- make sure no older compiled versions exist, or twine may try to upload them (and will fail)
+
+- Change version in pyproject.toml file, or it won't work at all.
+
+- move to the root folder.
+
+- python -m build
+
+- twine upload dist/*

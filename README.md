@@ -5,6 +5,16 @@ Plotting tool based on the arduino plotter using python and Qt, with extended fu
 Here a little Demo:
 ![Luisabel small Demo](https://github.com/raquenaengineering/arduino_plotter_pyqt/blob/main/docu/readme_images/luisabel_demo.gif)
 
+
+The application is also available as a Python package on PyPI and can be installed directly using pip:
+
+pip install luisabel-serial-plotter
+
+After installation, you can run the application from the command line without cloning the repository. 
+This is the recommended method for most users in case the executable file releases are detected as virus, 
+as it automatically handles dependencies and provides a stable, 
+versioned release of the application.
+
 ## Dependencies
 
 + Python 3.14
