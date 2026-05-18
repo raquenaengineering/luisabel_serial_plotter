@@ -46,6 +46,9 @@ from PySide6.QtWidgets import (
 	QMenu,
 	QWidget,
 	QInputDialog,
+	QHeaderView,
+	QTableWidget,
+	QTableWidgetItem,
 )
 
 from PySide6.QtGui import (
@@ -730,7 +733,57 @@ class MainWindow(QMainWindow):
 			self.plot_frame.set_max_points(self.n_data_points)
 
 	def shortcut_preferences(self):
+		shortcuts = [
+			("Up arrow", "Zoom Y in"),
+			("Down arrow", "Zoom Y out"),
+			("Left arrow", "Zoom X in"),
+			("Right arrow", "Zoom X out"),
+			("f", "Toggle fullscreen"),
+			("c", "Connect"),
+			("d", "Disconnect"),
+			("u", "Update serial ports"),
+			("p", "Pause plot"),
+			("y", "Play plot"),
+			("r", "Start recording"),
+			("s", "Autoscale Y axis"),
+			("l", "Toggle log window"),
+			(">", "Enable all plot channels"),
+			("<", "Disable all plot channels"),
+			("1-9", "Toggle plot channels 1-9"),
+			("0", "Toggle plot channel 10"),
+			("Ctrl+K", "Use socket communication"),
+			("Ctrl+L", "Use serial communication"),
+		]
+
+		dialog = QDialog(self)
+		dialog.setWindowTitle("Shortcuts")
+		dialog.resize(520, 520)
+
+		layout = QVBoxLayout(dialog)
+		table = QTableWidget(len(shortcuts), 2, dialog)
+		table.setHorizontalHeaderLabels(["Shortcut", "Action"])
+		table.verticalHeader().setVisible(False)
+		table.setEditTriggers(QTableWidget.NoEditTriggers)
+		table.setSelectionBehavior(QTableWidget.SelectRows)
+		table.setSelectionMode(QTableWidget.SingleSelection)
+		table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+		table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+		for row, (shortcut, action) in enumerate(shortcuts):
+			table.setItem(row, 0, QTableWidgetItem(shortcut))
+			table.setItem(row, 1, QTableWidgetItem(action))
+
+		close_button = QPushButton("Close", dialog)
+		close_button.clicked.connect(dialog.accept)
+
+		layout.addWidget(table)
+		layout.addWidget(close_button)
+		dialog.exec()
+		return
+
 		self.shortcuts = ShortcutsWidget()							# needs to be self, or it won't persist
+		# for now simply add a list with the shortcuts
+
 		#0. should be done on init(): Load the shortcuts from a file where they're stored ¿in json format?
 		#1. get the current shortcuts (stored somewhere in a variable, which also needs to be created(USE DICTIONARY))
 		#2. create a widget containing a table with all the shortcuts and their shortcut value. 
