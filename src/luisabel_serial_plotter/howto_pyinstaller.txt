@@ -7,6 +7,6 @@ SINGLE EXECUTABLE WITH LOGO:
  cd ~/Desktop/PROYECTOS/luisabel_serial_plotter/venv/Scripts
 
 2. Run Pyinstaller with the following commands:
-pyinstaller.exe --onefile --noupx --ico="../../resources/re_logo.ico" --noconsole ../../main.py
+./pyinstaller.exe --onefile --noupx --ico="../../src/luisabel_serial_plotter/resources/re_logo.ico" --noconsole ../../src/luisabel_serial_plotter/main.py
 
 
