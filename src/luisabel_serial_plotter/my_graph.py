@@ -5,7 +5,7 @@ import time
 
 import numpy as np
 
-from labelled_animated_toggle import *
+from luisabel_serial_plotter.labelled_animated_toggle import *
 
 COLORS = ["#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff",
 			"#FFA500","#7fff00","#00ff7f","#007FFF","#EE82EE","#FF007F",

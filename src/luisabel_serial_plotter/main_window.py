@@ -4,29 +4,25 @@ import time 										# delays, and time measurement ?
 import random										# random numbers
 import os											# dealing with directories
 
-import serial										# required to handle serial communication
-import serial.tools.list_ports						# to list already existing ports
-
 import csv
-import numpy as np 										# required to handle multidimensional arrays/matrices
+import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
 #logging.basicConfig(level=logging.DEBUG)			# enable debug messages
-from future.utils import text_type
-
-import parsers
-
 logging.basicConfig(level = logging.WARNING)
 
 # custom packages #
 
-from pyqt_common_resources import pyqt_custom_palettes				# moved to an independent repo, to reuse the palettes.
-from my_graph import MyPlot
-import my_graph														# for the global variables of the namespace.
-from re_pyqt_widgets.shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
-from re_pyqt_widgets.socket_widget import socket_widget
-from re_pyqt_widgets.serial_widget import serial_widget				# all serial is now handled by this widget
-from range_dialog import RangeDialog
+
+from luisabel_serial_plotter import parsers
+from luisabel_serial_plotter.my_graph import MyPlot
+from luisabel_serial_plotter import my_graph
+from luisabel_serial_plotter.range_dialog import RangeDialog
+from luisabel_serial_plotter.pyqt_common_resources import pyqt_custom_palettes				# moved to an independent repo, to reuse the palettes.
+from luisabel_serial_plotter.re_pyqt_widgets.shortcuts_widget import ShortcutsWidget		# custom widget to display and edit shortcuts
+from luisabel_serial_plotter.re_pyqt_widgets.socket_widget import socket_widget
+from luisabel_serial_plotter.re_pyqt_widgets.serial_widget import serial_widget				# all serial is now handled by this widget
+# from range_dialog import RangeDialog
 
 # qt imports #
 from PySide6.QtWidgets import (

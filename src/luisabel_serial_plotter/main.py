@@ -17,14 +17,8 @@
 '''
 
 import sys
-from pathlib import Path
 
-PACKAGE_DIR = Path(__file__).resolve().parent
-if str(PACKAGE_DIR) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_DIR))
-
-from main_window import QApplication, MainWindow
-
+from luisabel_serial_plotter.main_window import QApplication, MainWindow
 
 def main():
     app = QApplication(sys.argv)
@@ -35,15 +29,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-# import sys
-# from main_window import *
-#
-# ## MAIN ##
-# if __name__ == "__main__":
-# 	app = QApplication(sys.argv)
-# 	app.setStyle("Fusion")  # required to use it here
-# 	mw = MainWindow()
-# 	app.exec_()
