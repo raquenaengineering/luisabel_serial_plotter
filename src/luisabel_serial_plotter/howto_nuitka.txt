@@ -1,9 +1,0 @@
-SINGLE EXECUTABLE WITH LOGO: 
-------------------------------------------------------------------------
-
-1. Move to the location of nuitka:
- cd ~/Desktop/PROYECTOS/luisabel_serial_plotter/venv/Scripts
-
-2. Run Nuitka with the following commands:
-python -m nuitka --onefile --windows-disable-console --windows-icon-from-ico="../../resources/re_logo.ico" --enable-plugin=qt-plugins --include-qt-plugins=sensible,styles ../../main.py
-

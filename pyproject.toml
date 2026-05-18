@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luisabel_serial_plotter"            # later on change simply to luisabel, or max luisabel_plotter
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
   "pyserial",
   "PySide6",
