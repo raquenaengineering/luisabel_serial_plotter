@@ -15,7 +15,9 @@ Here a little Demo:
 + To simplify (in the project folder):
   pip install -r requirements.txt
 + submodules:
-  git submodule update --init --recursive
+(git submodule update --init --recursive)
++ [re_pyqt_widgets](https://github.com/raquenaengineering/re_pyqt_widgets/)
++ [pyqt_common_resources](https://github.com/raquenaengineering/pyqt_common_resources)
 
 ## Many thanks to:
 
